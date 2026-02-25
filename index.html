@@ -134,7 +134,7 @@ async function doLogin(){
   if(!email||!pass) return;
   btn.textContent='Anmelden...'; btn.disabled=true; errEl.style.display='none';
   try{
-    const res=await fetch('https://www.inoreader.com/accounts/ClientLogin',{
+    const res=await fetch('https://corsproxy.io/?url='+encodeURIComponent('https://www.inoreader.com/accounts/ClientLogin'),{
       method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded','AppId':CLIENT_ID,'AppKey':CLIENT_KEY},
       body:`Email=${encodeURIComponent(email)}&Passwd=${encodeURIComponent(pass)}`
