@@ -81,22 +81,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
   </div>
 </header>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <h1>▸ NEWSDESK SPEEDBOAT INT</h1>
-  <div class="login-box">
-    <label>INOREADER E-MAIL</label>
-    <input type="email" id="inp-email" placeholder="ihre@email.de" autocomplete="email">
-    <label>PASSWORT</label>
-    <input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password">
-    <div id="login-error">Anmeldung fehlgeschlagen — bitte prüfen Sie Ihre Zugangsdaten.</div>
-    <button class="login-submit" onclick="doLogin()">ANMELDEN</button>
-  </div>
-  <div class="login-note">Ihre Daten werden nur zur Authentifizierung bei Inoreader verwendet.</div>
-</div>
-
-<!-- DASHBOARD -->
-<div id="dashboard" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+<div id="dashboard" style="flex:1;flex-direction:column;overflow:hidden;">
   <div class="ticker">
     <div class="search-wrap">
       <input type="text" id="search-box" placeholder="Search…" oninput="render()">
@@ -109,9 +94,11 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 </div>
 
 <script>
-const CLIENT_ID  = '1000008397';
-const CLIENT_KEY = 'CTPkYtw_egWhJikQPxPC6slXSgcNQuAt';
-const API_BASE   = 'https://www.inoreader.com/reader/api/0';
+const PROXIES = [
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
 
 const FEEDS = [
   {name:'BAHA',      url:'https://breakingthenews.net/news-feed.xml'},
@@ -123,11 +110,9 @@ const FEEDS = [
   {name:'AL JAZEERA',url:'https://www.aljazeera.com/xml/rss/all.xml'},
 ];
 
-const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
-let authToken = sessionStorage.getItem('ino_auth_int') || null;
-let loadedCount = 0;
+const data = FEEDS.map(f=>({...f,items:[],status:'pending'}));
+let loadedCount=0;
 
-// Clock
 setInterval(()=>{
   const n=new Date(),p=x=>String(x).padStart(2,'0');
   document.getElementById('clock').textContent=
@@ -135,84 +120,48 @@ setInterval(()=>{
     n.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
 },1000);
 
-// Login
-document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin();
-});
-
-async function doLogin() {
-  const email = document.getElementById('inp-email').value.trim();
-  const pass  = document.getElementById('inp-pass').value;
-  const errEl = document.getElementById('login-error');
-  const btn   = document.querySelector('.login-submit');
-  if(!email||!pass) return;
-  btn.textContent='Anmelden…'; btn.disabled=true; errEl.style.display='none';
-  try {
-    const res = await fetch('https://www.inoreader.com/accounts/ClientLogin',{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded','AppId':CLIENT_ID,'AppKey':CLIENT_KEY},
-      body:`Email=${encodeURIComponent(email)}&Passwd=${encodeURIComponent(pass)}`
-    });
-    const text = await res.text();
-    if(!res.ok||!text.includes('Auth=')) throw new Error('failed');
-    const match = text.match(/Auth=(.+)/);
-    if(!match) throw new Error('no token');
-    authToken = match[1].trim();
-    sessionStorage.setItem('ino_auth_int', authToken);
-    initDashboard();
-  } catch(e) {
-    errEl.style.display='block';
-    btn.textContent='ANMELDEN'; btn.disabled=false;
+async function fetchFeed(url) {
+  for(const proxy of PROXIES){
+    try{
+      const res=await fetch(proxy(url),{signal:AbortSignal.timeout(10000)});
+      if(!res.ok) continue;
+      const text=await res.text();
+      if(text.includes('<item')||text.includes('<entry')) return text;
+    }catch(e){continue;}
   }
+  return null;
 }
 
-function logout() {
-  sessionStorage.removeItem('ino_auth_int');
-  authToken=null; location.reload();
+function parseXML(xml){
+  try{
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    const items=[...doc.querySelectorAll('item,entry')];
+    const parsed=items.slice(0,50).map(el=>{
+      const title=clean(el.querySelector('title')?.textContent||'');
+      const link=el.querySelector('link')?.textContent?.trim()||el.querySelector('link')?.getAttribute('href')||'#';
+      const pub=el.querySelector('pubDate,published,updated')?.textContent||'';
+      return{title,link,pub};
+    }).filter(i=>i.title.length>3);
+    parsed.sort((a,b)=>new Date(b.pub)-new Date(a.pub));
+    return parsed;
+  }catch(e){return[];}
 }
 
-// API fetch via Inoreader — no proxy needed!
-async function apiFetch(feedUrl) {
-  const streamId = `feed/${feedUrl}`;
-  const url = `${API_BASE}/stream/contents/${encodeURIComponent(streamId)}?n=30&output=json`;
-  const res = await fetch(url,{
-    headers:{
-      'Authorization':`GoogleLogin auth=${authToken}`,
-      'AppId':CLIENT_ID,
-      'AppKey':CLIENT_KEY,
-    },
-    signal:AbortSignal.timeout(12000)
-  });
-  if(res.status===401||res.status===403){logout();throw new Error('Session abgelaufen');}
-  if(!res.ok) throw new Error(res.status);
-  return res.json();
-}
-
-function initDashboard() {
-  document.getElementById('login-screen').style.display='none';
-  const dash = document.getElementById('dashboard');
-  dash.style.display='flex';
-  document.getElementById('btn-refresh').style.display='';
-  document.getElementById('btn-logout').style.display='';
-  refreshAll();
-}
-
-function render() {
-  const q = document.getElementById('search-box')?.value.toLowerCase().trim()||'';
+function render(){
+  const q=document.getElementById('search-box')?.value.toLowerCase().trim()||'';
   let totalHits=0;
-  document.getElementById('columns').innerHTML = data.map(feed=>{
-    const items = q ? feed.items.filter(i=>i.title.toLowerCase().includes(q)) : feed.items;
+  document.getElementById('columns').innerHTML=data.map(feed=>{
+    const items=q?feed.items.filter(i=>i.title.toLowerCase().includes(q)):feed.items;
     if(q) totalHits+=items.length;
     const st=feed.status;
     const body=
-      st==='pending'||st==='loading' ? `<div class="col-msg">⟳ loading…</div>` :
-      st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Not available</div>` :
-      items.length ? items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
+      st==='pending'||st==='loading'?`<div class="col-msg">⟳ loading…</div>`:
+      st==='fail'?`<div class="col-msg" style="animation:none;color:#503030;">Not available</div>`:
+      items.length?items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
         <div class="item-title">${esc(i.title)}</div>
         <div class="item-time">${timeAgo(i.pub)}</div>
-      </a>`).join('') :
-      `<div class="col-msg" style="animation:none;">${q?'No results':'No articles'}</div>`;
-    return `<div class="col">
+      </a>`).join(''):`<div class="col-msg" style="animation:none;">${q?'No results':'No articles'}</div>`;
+    return`<div class="col">
       <div class="col-head"><span class="col-name">${esc(feed.name)}</span><span class="col-count">${st==='ok'?items.length:''}</span></div>
       <div class="col-items">${body}</div>
     </div>`;
@@ -221,21 +170,14 @@ function render() {
   if(sc) sc.textContent=q?`${totalHits} results`:'';
 }
 
-async function loadFeed(feed) {
-  feed.status='loading'; render();
-  try {
-    const json = await apiFetch(feed.url);
-    const items = (json.items||[]).map(i=>({
-      title: clean(i.title||''),
-      link:  i.canonical?.[0]?.href||i.alternate?.[0]?.href||'#',
-      pub:   i.published ? new Date(i.published*1000).toISOString() : '',
-    })).filter(i=>i.title.length>3);
-    items.sort((a,b)=>new Date(b.pub)-new Date(a.pub));
-    feed.items=items;
-    feed.status=items.length?'ok':'fail';
-  } catch(e){
-    feed.status='fail';
-  }
+async function loadFeed(feed){
+  feed.status='loading';render();
+  try{
+    const xml=await fetchFeed(feed.url);
+    if(!xml) throw new Error('blocked');
+    const items=parseXML(xml);
+    feed.items=items;feed.status=items.length?'ok':'fail';
+  }catch(e){feed.status='fail';}
   loadedCount++;
   const ok=data.filter(f=>f.status==='ok').length;
   document.getElementById('load-status').textContent=
@@ -245,7 +187,7 @@ async function loadFeed(feed) {
   render();
 }
 
-async function refreshAll() {
+async function refreshAll(){
   loadedCount=0;
   data.forEach(f=>{f.items=[];f.status='pending';});
   document.getElementById('load-status').textContent='Loading…';
@@ -265,8 +207,8 @@ function timeAgo(d){
 function clean(s){return(s||'').replace(/<!\[CDATA\[|\]\]>/g,'').replace(/<[^>]+>/g,'').trim();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-if(authToken) initDashboard();
-setInterval(()=>{if(authToken) refreshAll();}, 180000);
+refreshAll();
+setInterval(refreshAll,180000);
 </script>
 </body>
 </html>
