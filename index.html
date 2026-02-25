@@ -102,13 +102,14 @@ const CLIENT_KEY = 'CTPkYtw_egWhJikQPxNPC6slXSgcNQuAt';
 const API_BASE   = 'https://www.inoreader.com/reader/api/0';
 
 const FEEDS = [
-  {name:'BAHA',       url:'https://breakingthenews.net/news-feed.xml'},
-  {name:'FRANCE 24',  url:'https://www.france24.com/en/rss'},
-  {name:'BNO',        url:'https://bnonews.com/index.php/feed/'},
-  {name:'ABC',        url:'https://feeds.abcnews.com/abcnews/topstories'},
-  {name:'NBC',        url:'https://feeds.nbcnews.com/nbcnews/public/news'},
-  {name:'CBS',        url:'https://www.cbsnews.com/latest/rss/main'},
-  {name:'AL JAZEERA', url:'https://www.aljazeera.com/xml/rss/all.xml'},
+  {name:'BAHA',      url:'https://breakingthenews.net/news-feed.xml'},
+  {name:'FRANCE 24', url:'http://www.france24.com/en/monde/rss'},
+  {name:'BNO',       url:'https://bnonews.com/index.php/feed/'},
+  {name:'ABC',       url:'https://feeds.abcnews.com/abcnews/internationalheadlines'},
+  {name:'NBC',       url:'https://feeds.nbcnews.com/nbcnews/public/news'},
+  {name:'CBS',       url:'https://www.cbsnews.com/latest/rss/main'},
+  {name:'AA',        url:'https://www.aa.com.tr/en/rss/default?cat=live'},
+  {name:'AL JAZEERA',url:'https://www.aljazeera.com/Services/Rss/?PostingId=2007731105943979989'},
 ];
 
 const data = FEEDS.map(f=>({...f,items:[],status:'pending'}));
