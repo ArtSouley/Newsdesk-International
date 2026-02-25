@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NewsDesk International</title>
+<title>NewsDesk Speedboat INT</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0c0f;--bg2:#0f1318;--panel:#111518;--border:#1c2530;--border2:#243040;--accent:#e8a020;--red:#e04455;--text:#ccd8e0;--text2:#7a9aaa;--dim:#354555;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
@@ -51,7 +51,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 <body>
 
 <header>
-  <div class="logo">▸ NEWSDESK INTERNATIONAL</div>
+  <div class="logo">▸ NEWSDESK SPEEDBOAT INT</div>
   <div class="sep"></div>
   <div id="clock">--:--:--</div>
   <div class="sep"></div>
@@ -76,12 +76,14 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 
 <script>
 const FEEDS = [
+  {name:'BAHA',      url:'https://breakingthenews.net/news-feed.xml'},
+  {name:'FRANCE 24', url:'https://www.france24.com/en/rss'},
+  {name:'BNO',       url:'https://bnonews.com/index.php/feed/'},
+  {name:'POLITICO',  url:'https://www.politico.com/rss/politicopicks.xml'},
+  {name:'YAHOO',     url:'https://rss.news.yahoo.com/rss/topstories'},
   {name:'AP',        url:'https://feeds.feedburner.com/APTopNews'},
   {name:'BBC',       url:'https://feeds.bbci.co.uk/news/world/rss.xml'},
   {name:'SKY',       url:'https://feeds.skynews.com/feeds/rss/world.xml'},
-  {name:'POLITICO',  url:'https://www.politico.com/rss/politicopicks.xml'},
-  {name:'BREAKING',  url:'https://breakingthenews.net/news-feed.xml'},
-  {name:'FRANCE 24', url:'https://www.france24.com/en/rss'},
 ];
 
 const PROXIES = [
