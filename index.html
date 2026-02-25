@@ -161,7 +161,8 @@ function logout(){
 async function apiFetch(feedUrl){
   const streamId=`feed/${feedUrl}`;
   const url=`${API_BASE}/stream/contents/${encodeURIComponent(streamId)}?n=50&output=json`;
-  const res=await fetch(url,{
+  const proxyUrl=`https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+  const res=await fetch(proxyUrl,{
     headers:{'Authorization':`GoogleLogin auth=${authToken}`,'AppId':CLIENT_ID,'AppKey':CLIENT_KEY},
     signal:AbortSignal.timeout(12000)
   });
