@@ -76,12 +76,12 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 
 <script>
 const FEEDS = [
-  {name:'AP',       url:'https://feedx.net/rss/ap.xml'},
-  {name:'REUTERS',  url:'https://feeds.reuters.com/reuters/worldNews'},
-  {name:'CNN',      url:'https://rss.cnn.com/rss/edition_world.rss'},
-  {name:'BBC',      url:'https://feeds.bbci.co.uk/news/world/rss.xml'},
-  {name:'POLITICO', url:'https://www.politico.eu/feed/'},
-  {name:'SKY',      url:'https://feeds.skynews.com/feeds/rss/world.xml'},
+  {name:'AP',        url:'https://feeds.feedburner.com/APTopNews'},
+  {name:'BBC',       url:'https://feeds.bbci.co.uk/news/world/rss.xml'},
+  {name:'SKY',       url:'https://feeds.skynews.com/feeds/rss/world.xml'},
+  {name:'POLITICO',  url:'https://www.politico.com/rss/politicopicks.xml'},
+  {name:'BREAKING',  url:'https://breakingthenews.net/news-feed.xml'},
+  {name:'FRANCE 24', url:'https://www.france24.com/en/rss'},
 ];
 
 const PROXIES = [
@@ -122,6 +122,8 @@ function parseXML(xml) {
       const pub   = el.querySelector('pubDate,published,updated')?.textContent||'';
       return {title, link, pub};
     }).filter(i=>i.title.length>3);
+    parsed.sort((a,b)=>new Date(b.pub)-new Date(a.pub));
+    return parsed.slice(0,50);
   } catch(e) { return []; }
 }
 
