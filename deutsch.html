@@ -53,7 +53,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 <header>
   <div class="logo">▸ NEWSDESK SPEEDBOAT DE</div>
   <div class="sep"></div>
-  <div id="clock" style="color:#e8a020!important;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;">--:--:--</div>
+  <div id="clock">--:--:--</div>
   <div class="sep"></div>
   <div class="live">● LIVE</div>
   <div class="header-right">
@@ -73,25 +73,18 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 </div>
 <div class="columns-wrap" id="columns"></div>
 
-
 <script>
 const FEEDS = [
-  {name:'SPIEGEL',    url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.spiegel.de%2Fschlagzeilen%2Findex.rss'},
-  {name:'BILD',       url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.bild.de%2Frss-feeds%2Frss-16725492%2Cfeed%3Dhome.bild.html'},
-  {name:'T-ONLINE',   url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.t-online.de%2Fschlagzeilen%2Ffeed.rss'},
-  {name:'NTV',        url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.n-tv.de%2Fhome%2FDas_Neueste%2Frss'},
-  {name:'DLF',        url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.deutschlandfunk.de%2Fdie-nachrichten.353.de.rss'},
-];
-
-const PROXIES = [
-  url => url, // Direkter Zugriff - Inoreader hat kein CORS-Problem
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  {name:'SPIEGEL',    url:'https://www.spiegel.de/schlagzeilen/index.rss'},
+  {name:'BILD',       url:'https://www.bild.de/rss-feeds/rss-16725492,feed=home.bild.html'},
+  {name:'T-ONLINE',   url:'https://www.t-online.de/schlagzeilen/feed.rss'},
+  {name:'NTV',        url:'https://www.n-tv.de/home/Das_Neueste/rss'},
+  {name:'DLF',        url:'https://www.deutschlandfunk.de/die-nachrichten.353.de.rss'},
 ];
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
 
-// Clock
 setInterval(()=>{
   const n=new Date(), p=x=>String(x).padStart(2,'0');
   document.getElementById('clock').textContent=
@@ -100,30 +93,22 @@ setInterval(()=>{
 },1000);
 
 async function fetchFeed(url) {
-  for (const proxy of PROXIES) {
-    try {
-      const res = await fetch(proxy(url), {signal: AbortSignal.timeout(10000)});
-      if (!res.ok) continue;
-      const text = await res.text();
-      if (text.includes('<item') || text.includes('<entry')) return text;
-    } catch(e) { continue; }
-  }
-  return null;
-}
-
-function parseXML(xml) {
   try {
-    const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
-      const title = clean(el.querySelector('title')?.textContent||'');
-      const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
-      const pub   = el.querySelector('pubDate,published,updated')?.textContent||'';
-      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
-    }).filter(i=>i.title.length>3);
-    // Sortiere nach Datum, neueste zuerst
-    items.sort((a, b) => b.date - a.date);
-    return items;
-  } catch(e) { return []; }
+    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
+    const res = await fetch(apiUrl, {signal: AbortSignal.timeout(15000)});
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'ok' && data.items && data.items.length > 0) {
+        return data.items.slice(0,50).map(item => ({
+          title: item.title || '',
+          link: item.link || '#',
+          pub: item.pubDate || '',
+          date: item.pubDate ? new Date(item.pubDate) : new Date(0)
+        })).filter(i=>i.title.length>3);
+      }
+    }
+  } catch(e) { }
+  return null;
 }
 
 function render() {
@@ -152,11 +137,11 @@ function render() {
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
-    const xml = await fetchFeed(feed.url);
-    if (!xml) throw new Error('blocked');
-    const items = parseXML(xml);
+    const items = await fetchFeed(feed.url);
+    if (!items || items.length === 0) throw new Error('no items');
+    items.sort((a, b) => b.date - a.date);
     feed.items  = items;
-    feed.status = items.length ? 'ok' : 'fail';
+    feed.status = 'ok';
   } catch(e) {
     feed.status = 'fail';
   }
@@ -189,7 +174,6 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} Std.`;
   return `${Math.floor(m/1440)}d`;
 }
-function clean(s){return(s||'').replace(/<!\[CDATA\[|\]\]>/g,'').replace(/<[^>]+>/g,'').trim();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
 </body>
