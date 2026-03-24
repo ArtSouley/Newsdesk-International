@@ -53,7 +53,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 <header>
   <div class="logo">▸ NEWSDESK SPEEDBOAT INT</div>
   <div class="sep"></div>
-  <div id="clock" style="color:#e8a020!important;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;">--:--:--</div>
+  <div id="clock">--:--:--</div>
   <div class="sep"></div>
   <div class="live">● LIVE</div>
   <div class="header-right">
@@ -69,32 +69,25 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
     <span id="search-count" style="font-family:var(--mono);font-size:0.52rem;color:var(--dim);white-space:nowrap;"></span>
   </div>
   <div class="ticker-lbl">LATEST</div>
-  <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Lade…</span></div>
+  <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Loading…</span></div>
 </div>
 <div class="columns-wrap" id="columns"></div>
-
 
 <script>
 const FEEDS = [
   {name:'SPECTATOR',  url:'https://www.spectator-index.com/api/rss'},
-  {name:'BAHA',       url:'https://www.inoreader.com/feed/https%3A%2F%2Fbreakingthenews.net%2Fnews-feed.xml'},
-  {name:'FRANCE 24',  url:'https://www.inoreader.com/feed/http%3A%2F%2Fwww.france24.com%2Fen%2Fmonde%2Frss'},
-  {name:'BBC',        url:'https://www.inoreader.com/feed/https%3A%2F%2Ffeeds.bbci.co.uk%2Fnews%2Frss.xml'},
-  {name:'ABC',        url:'https://www.inoreader.com/feed/https%3A%2F%2Ffeeds.abcnews.com%2Fabcnews%2Finternationalheadlines'},
-  {name:'CBS',        url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.cbsnews.com%2Flatest%2Frss%2Fmain'},
-  {name:'EURONEWS',   url:'https://www.inoreader.com/feed/https%3A%2F%2Ffeeds.feedburner.com%2Feuronews%2Fen%2Fhome%2F'},
-  {name:'AA',         url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.aa.com.tr%2Fen%2Frss%2Fdefault%3Fcat%3Dlive'},
-];
-
-const PROXIES = [
-  url => url, // Direkter Zugriff - Inoreader/Spectator haben kein CORS-Problem
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  {name:'BAHA',       url:'https://breakingthenews.net/news-feed.xml'},
+  {name:'FRANCE 24',  url:'http://www.france24.com/en/monde/rss'},
+  {name:'BBC',        url:'https://feeds.bbci.co.uk/news/rss.xml'},
+  {name:'ABC',        url:'https://feeds.abcnews.com/abcnews/topstories'},
+  {name:'GUARDIAN',   url:'https://feeds.guardian.co.uk/theguardian/world/rss'},
+  {name:'EURONEWS',   url:'https://de.euronews.com/rss?format=mrss&level=theme&name=news'},
+  {name:'AA',         url:'https://www.aa.com.tr/en/rss/default?cat=live'},
 ];
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
 
-// Clock
 setInterval(()=>{
   const n=new Date(), p=x=>String(x).padStart(2,'0');
   document.getElementById('clock').textContent=
@@ -103,30 +96,22 @@ setInterval(()=>{
 },1000);
 
 async function fetchFeed(url) {
-  for (const proxy of PROXIES) {
-    try {
-      const res = await fetch(proxy(url), {signal: AbortSignal.timeout(10000)});
-      if (!res.ok) continue;
-      const text = await res.text();
-      if (text.includes('<item') || text.includes('<entry')) return text;
-    } catch(e) { continue; }
-  }
-  return null;
-}
-
-function parseXML(xml) {
   try {
-    const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
-      const title = clean(el.querySelector('title')?.textContent||'');
-      const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
-      const pub   = el.querySelector('pubDate,published,updated')?.textContent||'';
-      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
-    }).filter(i=>i.title.length>3);
-    // Sortiere nach Datum, neueste zuerst
-    items.sort((a, b) => b.date - a.date);
-    return items;
-  } catch(e) { return []; }
+    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
+    const res = await fetch(apiUrl, {signal: AbortSignal.timeout(15000)});
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'ok' && data.items && data.items.length > 0) {
+        return data.items.slice(0,50).map(item => ({
+          title: item.title || '',
+          link: item.link || '#',
+          pub: item.pubDate || '',
+          date: item.pubDate ? new Date(item.pubDate) : new Date(0)
+        })).filter(i=>i.title.length>3);
+      }
+    }
+  } catch(e) { }
+  return null;
 }
 
 function render() {
@@ -137,8 +122,8 @@ function render() {
     if(q) totalHits += items.length;
     const st = feed.status;
     const body =
-      st==='pending'||st==='loading' ? `<div class="col-msg">⟳ lädt…</div>` :
-      st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Nicht verfügbar</div>` :
+      st==='pending'||st==='loading' ? `<div class="col-msg">⟳ loading…</div>` :
+      st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Not available</div>` :
       items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
         <div class="item-title">${esc(i.title)}</div>
         <div class="item-time">${timeAgo(i.pub)}</div>
@@ -149,24 +134,24 @@ function render() {
     </div>`;
   }).join('');
   const sc = document.getElementById('search-count');
-  if(sc) sc.textContent = q ? `${totalHits} Treffer` : '';
+  if(sc) sc.textContent = q ? `${totalHits} results` : '';
 }
 
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
-    const xml = await fetchFeed(feed.url);
-    if (!xml) throw new Error('blocked');
-    const items = parseXML(xml);
+    const items = await fetchFeed(feed.url);
+    if (!items || items.length === 0) throw new Error('no items');
+    items.sort((a, b) => b.date - a.date);
     feed.items  = items;
-    feed.status = items.length ? 'ok' : 'fail';
+    feed.status = 'ok';
   } catch(e) {
     feed.status = 'fail';
   }
   loadedCount++;
   const ok = data.filter(f=>f.status==='ok').length;
   document.getElementById('load-status').textContent =
-    loadedCount < data.length ? `${loadedCount}/${data.length}…` : `✓ ${ok} von ${data.length} aktiv`;
+    loadedCount < data.length ? `${loadedCount}/${data.length}…` : `✓ ${ok} of ${data.length} active`;
   const latest = data.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
   if (latest.length) document.getElementById('ticker-txt').textContent = latest.join('   //   ');
   render();
@@ -175,7 +160,7 @@ async function loadFeed(feed) {
 async function refreshAll() {
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
-  document.getElementById('load-status').textContent = 'lädt…';
+  document.getElementById('load-status').textContent = 'loading…';
   render();
   await Promise.allSettled(data.map(loadFeed));
 }
@@ -187,12 +172,11 @@ function timeAgo(d) {
   if(!d) return '';
   const m = Math.floor((Date.now()-new Date(d))/60000);
   if(isNaN(m)||m<0) return '';
-  if(m<2)    return 'eben';
-  if(m<60)   return `${m} Min.`;
-  if(m<1440) return `${Math.floor(m/60)} Std.`;
+  if(m<2)    return 'now';
+  if(m<60)   return `${m} min`;
+  if(m<1440) return `${Math.floor(m/60)} hr`;
   return `${Math.floor(m/1440)}d`;
 }
-function clean(s){return(s||'').replace(/<!\[CDATA\[|\]\]>/g,'').replace(/<[^>]+>/g,'').trim();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
 </body>
