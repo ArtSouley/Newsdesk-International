@@ -76,16 +76,16 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 
 <script>
 const FEEDS = [
-  {name:'SPIEGEL',    url:'https://www.spiegel.de/schlagzeilen/index.rss'},
-  {name:'T-ONLINE',   url:'https://www.t-online.de/feed.rss'},
-  {name:'NTV',        url:'https://www.n-tv.de/rss'},
-  {name:'DLF',        url:'https://www.deutschlandfunk.de/die-nachrichten.353.de.rss'},
+  {name:'SPIEGEL',    url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.spiegel.de%2Fschlagzeilen%2Findex.rss'},
+  {name:'BILD',       url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.bild.de%2Frss-feeds%2Frss-16725492%2Cfeed%3Dhome.bild.html'},
+  {name:'T-ONLINE',   url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.t-online.de%2Fschlagzeilen%2Ffeed.rss'},
+  {name:'NTV',        url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.n-tv.de%2Fhome%2FDas_Neueste%2Frss'},
+  {name:'DLF',        url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.deutschlandfunk.de%2Fdie-nachrichten.353.de.rss'},
 ];
 
 const PROXIES = [
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => url, // Direkter Zugriff - Inoreader hat kein CORS-Problem
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
