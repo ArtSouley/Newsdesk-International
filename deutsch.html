@@ -114,12 +114,15 @@ async function fetchFeed(url) {
 function parseXML(xml) {
   try {
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    return [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
+    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
       const title = clean(el.querySelector('title')?.textContent||'');
       const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
       const pub   = el.querySelector('pubDate,published,updated')?.textContent||'';
-      return {title, link, pub};
+      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
     }).filter(i=>i.title.length>3);
+    // Sortiere nach Datum, neueste zuerst
+    items.sort((a, b) => b.date - a.date);
+    return items;
   } catch(e) { return []; }
 }
 
