@@ -77,17 +77,18 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 <script>
 const FEEDS = [
   {name:'SPECTATOR',  url:'https://www.spectator-index.com/api/rss'},
-  {name:'FRANCE 24',  url:'https://www.france24.com/en/live-news/rss'},
-  {name:'AL JAZEERA', url:'https://www.aljazeera.com/Services/Rss/?PostingId=2007731105943979989'},
-  {name:'ABC',        url:'https://feeds.abcnews.com/abcnews/internationalheadlines'},
-  {name:'CBS',        url:'https://www.cbsnews.com/latest/rss/main'},
-  {name:'BNO',        url:'https://bnonews.com/index.php/feed/'},
+  {name:'BAHA',       url:'https://www.inoreader.com/feed/https%3A%2F%2Fbreakingthenews.net%2Fnews-feed.xml'},
+  {name:'FRANCE 24',  url:'https://www.inoreader.com/feed/http%3A%2F%2Fwww.france24.com%2Fen%2Fmonde%2Frss'},
+  {name:'BBC',        url:'https://www.inoreader.com/feed/https%3A%2F%2Ffeeds.bbci.co.uk%2Fnews%2Frss.xml'},
+  {name:'ABC',        url:'https://www.inoreader.com/feed/https%3A%2F%2Ffeeds.abcnews.com%2Fabcnews%2Finternationalheadlines'},
+  {name:'CBS',        url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.cbsnews.com%2Flatest%2Frss%2Fmain'},
+  {name:'EURONEWS',   url:'https://www.inoreader.com/feed/https%3A%2F%2Ffeeds.feedburner.com%2Feuronews%2Fen%2Fhome%2F'},
+  {name:'AA',         url:'https://www.inoreader.com/feed/https%3A%2F%2Fwww.aa.com.tr%2Fen%2Frss%2Fdefault%3Fcat%3Dlive'},
 ];
 
 const PROXIES = [
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => url, // Direkter Zugriff - Inoreader/Spectator haben kein CORS-Problem
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
