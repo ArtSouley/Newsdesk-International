@@ -92,53 +92,6 @@ setInterval(()=>{
     n.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
 },1000);
 
-async function fetchFeed(url) {
-  // Multi-Proxy-Strategie: RSS2JSON -> AllOrigins -> Direkt
-  const strategies = [
-    // 1. RSS2JSON (beste Option für RSS)
-    async () => {
-      const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
-      const res = await fetch(apiUrl, {signal: AbortSignal.timeout(12000)});
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.status === 'ok' && data.items && data.items.length > 0) {
-        return data.items.slice(0,50).map(item => ({
-          title: item.title || '',
-          link: item.link || '#',
-          pub: item.pubDate || '',
-          date: item.pubDate ? new Date(item.pubDate) : new Date(0)
-        }));
-      }
-      return null;
-    },
-    // 2. AllOrigins Proxy
-    async () => {
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(12000)});
-      if (!res.ok) return null;
-      const text = await res.text();
-      return parseXML(text);
-    },
-    // 3. Direkter Zugriff (falls kein CORS)
-    async () => {
-      const res = await fetch(url, {signal: AbortSignal.timeout(10000)});
-      if (!res.ok) return null;
-      const text = await res.text();
-      return parseXML(text);
-    }
-  ];
-
-  for (const strategy of strategies) {
-    try {
-      const items = await strategy();
-      if (items && items.length > 0) {
-        return items.filter(i => i.title && i.title.length > 3);
-      }
-    } catch(e) { continue; }
-  }
-  return null;
-}
-
 function parseXML(xml) {
   try {
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
@@ -148,8 +101,44 @@ function parseXML(xml) {
       const pub   = el.querySelector('pubDate,published,updated')?.textContent?.trim() || '';
       return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
     });
-    return items;
+    return items.filter(i=>i.title.length>3);
   } catch(e) { return []; }
+}
+
+async function fetchFeed(url) {
+  // Strategie 1: AllOrigins (ECHTE XML-Daten mit korrekten Zeitstempeln!)
+  try {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(15000)});
+    if (res.ok) {
+      const text = await res.text();
+      const items = parseXML(text);
+      if (items.length > 0) return items;
+    }
+  } catch(e) {}
+  
+  // Strategie 2: Direkter Zugriff
+  try {
+    const res = await fetch(url, {signal: AbortSignal.timeout(10000)});
+    if (res.ok) {
+      const text = await res.text();
+      const items = parseXML(text);
+      if (items.length > 0) return items;
+    }
+  } catch(e) {}
+  
+  // Strategie 3: CORS Proxy
+  try {
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(12000)});
+    if (res.ok) {
+      const text = await res.text();
+      const items = parseXML(text);
+      if (items.length > 0) return items;
+    }
+  } catch(e) {}
+  
+  return null;
 }
 
 function render() {
