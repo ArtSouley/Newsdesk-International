@@ -64,7 +64,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 
 <div class="ticker">
   <div style="display:flex;align-items:center;gap:6px;padding:0 10px;flex-shrink:0;">
-    <input type="text" id="search-box" placeholder="Suche…" oninput="render()"
+    <input type="text" id="search-box" placeholder="Search…" oninput="render()"
       style="font-family:var(--mono);font-size:0.58rem;padding:1px 7px;background:var(--panel);border:1px solid var(--border2);color:var(--text);border-radius:2px;width:160px;outline:none;height:16px;">
     <span id="search-count" style="font-family:var(--mono);font-size:0.52rem;color:var(--dim);white-space:nowrap;"></span>
   </div>
@@ -96,10 +96,13 @@ setInterval(()=>{
 },1000);
 
 async function fetchFeed(url) {
-  try {
-    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
-    const res = await fetch(apiUrl, {signal: AbortSignal.timeout(15000)});
-    if (res.ok) {
+  // Multi-Proxy-Strategie: RSS2JSON -> AllOrigins -> Direkt
+  const strategies = [
+    // 1. RSS2JSON (beste Option für RSS)
+    async () => {
+      const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
+      const res = await fetch(apiUrl, {signal: AbortSignal.timeout(12000)});
+      if (!res.ok) return null;
       const data = await res.json();
       if (data.status === 'ok' && data.items && data.items.length > 0) {
         return data.items.slice(0,50).map(item => ({
@@ -107,11 +110,49 @@ async function fetchFeed(url) {
           link: item.link || '#',
           pub: item.pubDate || '',
           date: item.pubDate ? new Date(item.pubDate) : new Date(0)
-        })).filter(i=>i.title.length>3);
+        }));
       }
+      return null;
+    },
+    // 2. AllOrigins Proxy
+    async () => {
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(12000)});
+      if (!res.ok) return null;
+      const text = await res.text();
+      return parseXML(text);
+    },
+    // 3. Direkter Zugriff (falls kein CORS)
+    async () => {
+      const res = await fetch(url, {signal: AbortSignal.timeout(10000)});
+      if (!res.ok) return null;
+      const text = await res.text();
+      return parseXML(text);
     }
-  } catch(e) { }
+  ];
+
+  for (const strategy of strategies) {
+    try {
+      const items = await strategy();
+      if (items && items.length > 0) {
+        return items.filter(i => i.title && i.title.length > 3);
+      }
+    } catch(e) { continue; }
+  }
   return null;
+}
+
+function parseXML(xml) {
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
+      const title = el.querySelector('title')?.textContent?.trim() || '';
+      const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
+      const pub   = el.querySelector('pubDate,published,updated')?.textContent?.trim() || '';
+      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
+    });
+    return items;
+  } catch(e) { return []; }
 }
 
 function render() {
@@ -126,7 +167,7 @@ function render() {
       st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Not available</div>` :
       items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
         <div class="item-title">${esc(i.title)}</div>
-        <div class="item-time">${timeAgo(i.pub)}</div>
+        <div class="item-time">${timeAgo(i.date)}</div>
       </a>`).join('');
     return `<div class="col">
       <div class="col-head"><span class="col-name">${esc(feed.name)}</span><span class="col-count">${st==='ok'?feed.items.length:''}</span></div>
@@ -169,8 +210,8 @@ refreshAll();
 setInterval(refreshAll, 180000);
 
 function timeAgo(d) {
-  if(!d) return '';
-  const m = Math.floor((Date.now()-new Date(d))/60000);
+  if(!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+  const m = Math.floor((Date.now() - d.getTime())/60000);
   if(isNaN(m)||m<0) return '';
   if(m<2)    return 'now';
   if(m<60)   return `${m} min`;
