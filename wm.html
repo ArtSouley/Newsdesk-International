@@ -36,8 +36,8 @@ header{display:flex;align-items:center;gap:12px;padding:0 16px;height:40px;flex-
 .item{display:block;text-decoration:none;padding:9px 11px;border-bottom:1px solid var(--border);transition:background .12s;}
 .item:hover{background:rgba(232,160,32,.07);}
 .item:hover .item-title{color:var(--accent);}
-.item-src{font-family:var(--mono);font-size:0.5rem;color:var(--accent);margin-bottom:3px;letter-spacing:0.04em;}
-.item-src .ago{color:var(--dim);}
+.item-src{font-family:var(--mono);font-size:0.56rem;color:var(--accent);margin-bottom:3px;letter-spacing:0.04em;}
+.item-src .ago{color:var(--text2);}
 .item-title{font-size:0.79rem;line-height:1.46;color:var(--text);transition:color .12s;}
 
 .ticker{display:flex;align-items:center;height:22px;background:var(--bg2);border-top:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
@@ -206,10 +206,10 @@ function timeAgo(d){
   if(!d||!(d instanceof Date)||isNaN(d.getTime())) return '';
   const m=Math.floor((Date.now()-d.getTime())/60000);
   if(isNaN(m)||m<0) return '';
-  if(m<2) return 'eben';
-  if(m<60) return `${m} Min.`;
-  if(m<1440) return `${Math.floor(m/60)} Std.`;
-  return `${Math.floor(m/1440)}d`;
+  if(m<2) return 'gerade eben';
+  if(m<60) return `vor ${m} Min.`;
+  if(m<1440) return `vor ${Math.floor(m/60)} Std.`;
+  return `vor ${Math.floor(m/1440)} Tg.`;
 }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
