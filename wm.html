@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NewsDesk Speedboat WM 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0c0f;--bg2:#0f1318;--panel:#111518;--border:#1c2530;--border2:#243040;--accent:#e8a020;--red:#e04455;--green:#3ddc84;--text:#ccd8e0;--text2:#7a9aaa;--dim:#354555;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);}
+body{display:flex;flex-direction:column;}
+
+header{display:flex;align-items:center;gap:12px;padding:0 16px;height:40px;flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border2);}
+.logo{font-family:var(--mono);font-weight:600;font-size:0.72rem;letter-spacing:0.2em;color:var(--accent);white-space:nowrap;}
+.sep{width:1px;height:18px;background:var(--border2);}
+#clock{font-family:var(--mono);font-size:0.7rem;color:var(--accent);white-space:nowrap;}
+#countdown{font-family:var(--mono);font-size:0.64rem;color:var(--green);white-space:nowrap;}
+.live{font-family:var(--mono);font-size:0.56rem;color:var(--red);letter-spacing:0.2em;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.btn{font-family:var(--mono);font-size:0.56rem;padding:3px 10px;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;border-radius:2px;transition:all .2s;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.tabbar{display:flex;align-items:center;gap:6px;padding:6px 16px;flex-shrink:0;background:var(--bg2);border-bottom:2px solid var(--accent);overflow-x:auto;scrollbar-width:none;}
+.tabbar::-webkit-scrollbar{display:none;}
+.tab{font-family:var(--mono);font-size:0.62rem;font-weight:600;letter-spacing:0.1em;padding:5px 14px;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;border-radius:3px;white-space:nowrap;transition:all .15s;}
+.tab:hover{color:var(--text);border-color:var(--dim);}
+.tab.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+#load-status{margin-left:auto;font-family:var(--mono);font-size:0.58rem;color:var(--accent);white-space:nowrap;padding-left:10px;}
+
+.columns-wrap{flex:1;display:flex;gap:1px;background:var(--border);overflow:hidden;min-height:0;}
+.col{flex:1;display:flex;flex-direction:column;background:var(--panel);overflow:hidden;min-width:0;}
+.col-head{padding:7px 10px;background:var(--bg2);border-bottom:1px solid var(--border);border-top:2px solid var(--accent);font-family:var(--mono);font-size:0.58rem;font-weight:600;letter-spacing:0.1em;flex-shrink:0;display:flex;align-items:center;}
+.col-name{flex:1;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.col-count{color:var(--dim);font-weight:400;padding-left:6px;}
+.col-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.col-items::-webkit-scrollbar{width:3px;}
+.col-items::-webkit-scrollbar-thumb{background:var(--border2);}
+.col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.58rem;color:var(--dim);text-align:center;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+.item{display:block;text-decoration:none;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .12s;}
+.item:hover{background:rgba(232,160,32,.07);}
+.item:hover .item-title{color:var(--accent);}
+.item-title{font-size:0.78rem;line-height:1.46;color:var(--text);transition:color .12s;margin-bottom:4px;}
+.item-time{font-family:var(--mono);font-size:0.5rem;color:var(--accent);}
+
+.ticker{display:flex;align-items:center;height:22px;background:var(--bg2);border-top:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
+.ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:var(--bg);background:var(--accent);padding:0 10px;height:100%;display:flex;align-items:center;letter-spacing:0.16em;flex-shrink:0;}
+.ticker-track{flex:1;overflow:hidden;}
+.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.75rem;color:var(--accent);animation:scroll 55s linear infinite;}
+.ticker-txt:hover{animation-play-state:paused;}
+@keyframes scroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">▸ NEWSDESK · WM 2026</div>
+  <div class="sep"></div>
+  <div id="clock">--:--:--</div>
+  <div class="sep"></div>
+  <div class="live">● LIVE</div>
+  <div class="header-right">
+    <input type="text" id="search-box" placeholder="Suche in Gruppe…" oninput="render()"
+      style="font-family:var(--mono);font-size:0.56rem;padding:2px 8px;background:var(--panel);border:1px solid var(--border2);color:var(--text);border-radius:2px;width:150px;outline:none;height:20px;">
+    <button class="btn" onclick="refreshAll()">⟳ REFRESH</button>
+  </div>
+</header>
+
+<div class="tabbar" id="tabbar"></div>
+<div class="columns-wrap" id="columns"></div>
+
+<div class="ticker">
+  <div class="ticker-lbl" id="ticker-lbl">DFB</div>
+  <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Lädt…</span></div>
+</div>
+
+<script>
+// Google-News-Suchfeeds (q=Begriff) liefern automatisch einen RSS-Feed zu jedem Thema/Land.
+const GN = (q, hl='de', gl='DE') => `https://news.google.com/rss/search?q=${q}&hl=${hl}&gl=${gl}&ceid=${gl}:${hl.split('-')[0]}`;
+
+const GROUPS = [
+  { id:'dfb', label:'DFB & DEUTSCHLAND', tick:'DFB & DE', feeds:[
+    {name:'DFB-TEAM',      url:GN('DFB%20Nationalmannschaft%20WM')},
+    {name:'kicker WM',     url:'https://newsfeed.kicker.de/news/wm'},
+    {name:'SPORTSCHAU DFB',url:'https://www.sportschau.de/fussball/nationalmannschaft/index~rss2.xml'},
+    {name:'ZDF SPORT',     url:GN('ZDF%20Fussball%20WM%202026')},
+    {name:'SKY SPORT',     url:GN('Sky%20Sport%20Fussball%20WM%202026')},
+    {name:'SID',           url:GN('SID%20Fussball%20Nationalmannschaft%20WM')},
+  ]},
+  { id:'talk', label:'GESPRÄCHSWERT & DEBATTE', tick:'GESPRÄCHSWERT', feeds:[
+    {name:'11FREUNDE',     url:'https://www.11freunde.de/rss.xml'},
+    {name:'AUFREGER/DEBATTEN', url:GN('WM%202026%20Kritik%20OR%20Eklat%20OR%20Debatte')},
+    {name:'DRUMHERUM/COLOR',   url:GN('WM%202026%20Fans%20OR%20Stimmung%20OR%20Gastgeber')},
+    {name:'HOST / USA',    url:GN('World%20Cup%202026%20host%20OR%20fans%20OR%20security','en-US','US')},
+  ]},
+  { id:'intl', label:'INTERNATIONAL', tick:'INTERNATIONAL', feeds:[
+    {name:'GUARDIAN',      url:'https://www.theguardian.com/football/rss'},
+    {name:'BBC SPORT',     url:'https://feeds.bbci.co.uk/sport/football/rss.xml'},
+    {name:'FRANKREICH',    url:GN('Coupe%20du%20Monde%202026','fr','FR')},
+    {name:'SPANIEN',       url:GN('Mundial%202026','es','ES')},
+    {name:'ITALIEN',       url:GN('Mondiale%202026','it','IT')},
+  ]},
+];
+
+// Init
+GROUPS.forEach(g => g.feeds.forEach(f => { f.items=[]; f.status='pending'; f.group=g.id; }));
+const allFeeds = GROUPS.flatMap(g => g.feeds);
+let activeTab = 'dfb';
+let loadedCount = 0;
+
+const groupById = id => GROUPS.find(g => g.id === id);
+
+// Tabs aufbauen
+document.getElementById('tabbar').innerHTML =
+  GROUPS.map(g => `<button class="tab" data-id="${g.id}" onclick="switchTab('${g.id}')">${g.label}</button>`).join('') +
+  `<span id="load-status"></span>`;
+
+function switchTab(id){
+  activeTab = id;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.id === id));
+  document.getElementById('search-box').value = '';
+  document.getElementById('ticker-lbl').textContent = groupById(id).tick;
+  render(); updateTicker();
+}
+
+// Uhr (MEZ)
+setInterval(()=>{
+  const n=new Date(), p=x=>String(x).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} MEZ`;
+},1000);
+
+function parseXML(xml){
+  try{
+    const doc = new DOMParser().parseFromString(xml,'text/xml');
+    return [...doc.querySelectorAll('item,entry')].slice(0,60).map(el=>{
+      const title = el.querySelector('title')?.textContent?.trim() || '';
+      const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
+      const pub   = el.querySelector('pubDate,published,updated')?.textContent?.trim() || '';
+      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
+    }).filter(i=>i.title.length>3);
+  }catch(e){ return []; }
+}
+
+async function fetchFeed(url){
+  // 1. AllOrigins (echte XML, korrekte Zeitstempel)
+  try{ const r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(15000)});
+    if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
+  // 2. Direkt
+  try{ const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
+    if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
+  // 3. CORS-Proxy
+  try{ const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(12000)});
+    if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
+  return null;
+}
+
+function render(){
+  const feeds = groupById(activeTab).feeds;
+  const q = (document.getElementById('search-box')?.value || '').toLowerCase().trim();
+  document.getElementById('columns').innerHTML = feeds.map(feed=>{
+    const items = q ? feed.items.filter(i=>i.title.toLowerCase().includes(q)) : feed.items;
+    const st = feed.status;
+    const body =
+      st==='pending'||st==='loading' ? `<div class="col-msg">⟳ lädt…</div>` :
+      st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Nicht verfügbar</div>` :
+      items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
+        <div class="item-title">${esc(i.title)}</div><div class="item-time">${timeAgo(i.date)}</div></a>`).join('');
+    return `<div class="col"><div class="col-head"><span class="col-name">${esc(feed.name)}</span><span class="col-count">${st==='ok'?feed.items.length:''}</span></div><div class="col-items">${body}</div></div>`;
+  }).join('');
+}
+
+function updateTicker(){
+  const feeds = groupById(activeTab).feeds;
+  const latest = feeds.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
+  if(latest.length) document.getElementById('ticker-txt').textContent = latest.join('   //   ');
+}
+
+async function loadFeed(feed){
+  feed.status='loading'; if(feed.group===activeTab) render();
+  try{
+    const items = await fetchFeed(feed.url);
+    if(!items || !items.length) throw new Error('empty');
+    items.sort((a,b)=>b.date-a.date);
+    feed.items=items; feed.status='ok';
+  }catch(e){ feed.status='fail'; }
+  loadedCount++;
+  const ok = allFeeds.filter(f=>f.status==='ok').length;
+  const ls = document.getElementById('load-status');
+  if(ls) ls.textContent = loadedCount<allFeeds.length ? `${loadedCount}/${allFeeds.length}…` : `✓ ${ok}/${allFeeds.length} aktiv`;
+  if(feed.group===activeTab){ render(); updateTicker(); }
+}
+
+async function refreshAll(){
+  loadedCount=0;
+  allFeeds.forEach(f=>{f.items=[];f.status='pending';});
+  render();
+  await Promise.allSettled(allFeeds.map(loadFeed));
+}
+
+// Start
+switchTab('dfb');
+refreshAll();
+setInterval(refreshAll, 300000);
+
+function timeAgo(d){
+  if(!d||!(d instanceof Date)||isNaN(d.getTime())) return '';
+  const m=Math.floor((Date.now()-d.getTime())/60000);
+  if(isNaN(m)||m<0) return '';
+  if(m<2) return 'eben';
+  if(m<60) return `${m} Min.`;
+  if(m<1440) return `${Math.floor(m/60)} Std.`;
+  return `${Math.floor(m/1440)}d`;
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
