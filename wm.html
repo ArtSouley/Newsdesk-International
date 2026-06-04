@@ -56,9 +56,10 @@ header{display:flex;align-items:center;gap:12px;padding:0 16px;height:40px;flex-
   <div id="clock">--:--:--</div>
   <div class="sep"></div>
   <div class="live">● LIVE</div>
+  <div class="sep"></div>
+  <input type="text" id="search-box" placeholder="Suche (alle Spalten)…" oninput="render()"
+    style="font-family:var(--mono);font-size:0.56rem;padding:2px 8px;background:var(--panel);border:1px solid var(--border2);color:var(--text);border-radius:2px;width:160px;outline:none;height:20px;">
   <div class="header-right">
-    <input type="text" id="search-box" placeholder="Suche (alle Spalten)…" oninput="render()"
-      style="font-family:var(--mono);font-size:0.56rem;padding:2px 8px;background:var(--panel);border:1px solid var(--border2);color:var(--text);border-radius:2px;width:160px;outline:none;height:20px;">
     <span id="load-status"></span>
     <button class="btn" onclick="refreshAll()">⟳ REFRESH</button>
   </div>
