@@ -106,39 +106,43 @@ function parseXML(xml) {
   } catch(e) { return []; }
 }
 
+// Mehrere Proxy-Wege nacheinander – der erste, der gültiges RSS liefert, gewinnt.
 async function fetchFeed(url) {
-  // Strategie 1: AllOrigins (ECHTE XML-Daten mit korrekten Zeitstempeln!)
-  try {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(15000)});
-    if (res.ok) {
-      const text = await res.text();
-      const items = parseXML(text);
-      if (items.length > 0) return items;
-    }
-  } catch(e) {}
-  
-  // Strategie 2: Direkter Zugriff
-  try {
-    const res = await fetch(url, {signal: AbortSignal.timeout(10000)});
-    if (res.ok) {
-      const text = await res.text();
-      const items = parseXML(text);
-      if (items.length > 0) return items;
-    }
-  } catch(e) {}
-  
-  // Strategie 3: CORS Proxy
-  try {
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(12000)});
-    if (res.ok) {
-      const text = await res.text();
-      const items = parseXML(text);
-      if (items.length > 0) return items;
-    }
-  } catch(e) {}
-  
+  const strategies = [
+    // 1. AllOrigins (raw)
+    async () => {
+      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)});
+      return r.ok ? await r.text() : null;
+    },
+    // 2. codetabs-Proxy (greift oft, wo AllOrigins blockt – z. B. t-online)
+    async () => {
+      const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)});
+      return r.ok ? await r.text() : null;
+    },
+    // 3. AllOrigins (JSON-Variante)
+    async () => {
+      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)});
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j && j.contents ? j.contents : null;
+    },
+    // 4. corsproxy.io
+    async () => {
+      const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
+      return r.ok ? await r.text() : null;
+    },
+    // 5. Direkter Zugriff
+    async () => {
+      const r = await fetch(url, {signal:AbortSignal.timeout(10000)});
+      return r.ok ? await r.text() : null;
+    },
+  ];
+  for (const strat of strategies) {
+    try {
+      const text = await strat();
+      if (text) { const items = parseXML(text); if (items.length > 0) return items; }
+    } catch(e) {}
+  }
   return null;
 }
 
