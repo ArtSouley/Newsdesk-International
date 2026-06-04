@@ -73,10 +73,11 @@ const GN = (q, hl='de', gl='DE') => `https://news.google.com/rss/search?q=${q}&h
 
 // Eine Spalte pro Land. Alle Feeds der Spalte werden zu EINEM Strom gemischt.
 const COLUMNS = [
-  { label:'DT MEDIEN', feeds:[
+  { label:'DEU MEDIEN', feeds:[
     {name:'GoogleNews',  urls:[GN('Fussball-WM%202026%20OR%20DFB','de','DE')]},
     {name:'kicker',      urls:['https://newsfeed.kicker.de/news/fussball','https://newsfeed.kicker.de/news/aktuell']},
-    {name:'Sportschau',  urls:['https://www.sportschau.de/fussball/index~rss2.xml']},
+    {name:'kicker Int.', urls:['https://newsfeed.kicker.de/news/internationaler-fussball']},
+    {name:'Sportschau',  urls:['https://www.sportschau.de/fussball/fussballindex100_type-rss.feed','https://www.sportschau.de/fussball/index~rss2.xml']},
     {name:'Spiegel',     urls:['https://www.spiegel.de/sport/index.rss']},
     {name:'Sport1',      urls:[GN('site:sport1.de%20WM%20OR%20DFB%20OR%20Fussball','de','DE')]},
     {name:'Spox',        urls:['https://www.spox.com/pub/rss/fussball.xml','https://www.spox.com/pub/rss/sport.xml']},
@@ -89,28 +90,36 @@ const COLUMNS = [
   ]},
   { label:'ENG MEDIEN', feeds:[
     {name:'GoogleNews',  urls:[GN('World%20Cup%202026%20OR%20%22Three%20Lions%22','en-GB','GB')]},
-    {name:'Guardian',    urls:['https://www.theguardian.com/football/rss']},
+    {name:'Guardian WM', urls:['https://www.theguardian.com/football/world-cup-football/rss','https://www.theguardian.com/football/rss']},
     {name:'BBC',         urls:['https://feeds.bbci.co.uk/sport/football/rss.xml']},
     {name:'Sky',         urls:['https://www.skysports.com/rss/12040']},
     {name:'Independent', urls:['https://www.independent.co.uk/sport/football/rss']},
+    {name:'EPL Talk',    urls:['https://feeds.feedburner.com/EPLTalk']},
   ]},
   { label:'SPA MEDIEN', feeds:[
     {name:'GoogleNews',  urls:[GN('Mundial%202026%20OR%20seleccion','es','ES')]},
     {name:'Marca',       urls:['https://e00-marca.uecdn.es/rss/portada.xml']},
     {name:'AS',          urls:['https://feeds.as.com/mrss-s/pages/as/site/as.com/section/futbol/portada/']},
     {name:'MundoDep.',   urls:['https://www.mundodeportivo.com/feed/rss/home']},
+    {name:'20 Minutos',  urls:['https://www.20minutos.es/rss/deportes/']},
+    {name:'El Periódico',urls:['https://www.elperiodico.com/es/rss/deportes/rss.xml']},
+    {name:'EuropaPress', urls:['https://www.europapress.es/rss/rss.aspx?ch=67']},
   ]},
-  { label:'ITA MEDIEN', feeds:[
-    {name:'GoogleNews',  urls:[GN('Mondiale%202026%20OR%20Nazionale','it','IT')]},
-    {name:'Gazzetta',    urls:['https://www.gazzetta.it/rss/home.xml']},
-    {name:'Corriere',    urls:[GN('site:corrieredellosport.it','it','IT')]},
-    {name:'Tuttosport',  urls:[GN('site:tuttosport.com','it','IT')]},
-  ]},
-  { label:'FR MEDIEN', feeds:[
+  { label:'FRA MEDIEN', feeds:[
     {name:'GoogleNews',  urls:[GN('Coupe%20du%20Monde%202026%20OR%20Bleus','fr','FR')]},
     {name:'L\'Équipe',   urls:['https://dwh.lequipe.fr/api/edito/rss?path=/Football/']},
     {name:'FranceInfo',  urls:['https://www.francetvinfo.fr/sports.rss']},
     {name:'Figaro',      urls:['https://www.lefigaro.fr/rss/figaro_sport.xml']},
+    {name:'FootMercato', urls:['https://www.footmercato.net/flux-rss']},
+  ]},
+  { label:'BRA MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('Copa%20do%20Mundo%202026%20OR%20Selecao%20Brasil','pt-BR','BR')]},
+  ]},
+  { label:'ARG MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('Mundial%202026%20OR%20seleccion%20argentina','es-419','AR')]},
+  ]},
+  { label:'POR MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('Mundial%202026%20OR%20Selecao','pt-PT','PT')]},
   ]},
 ];
 
@@ -123,6 +132,16 @@ setInterval(()=>{
   document.getElementById('clock').textContent = `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} MEZ`;
 },1000);
 
+function parseDate(s){
+  if(!s) return new Date(0);
+  let d = new Date(s);
+  if(!isNaN(d.getTime())) return d;
+  // benannte US-Zeitzonen (EST/EDT/PST…) in Offsets umwandeln, damit der Browser sie versteht
+  const tz={EST:'-0500',EDT:'-0400',CST:'-0600',CDT:'-0500',MST:'-0700',MDT:'-0600',PST:'-0800',PDT:'-0700',ET:'-0500',PT:'-0800',GMT:'+0000',UTC:'+0000'};
+  d = new Date(s.replace(/\b(EST|EDT|CST|CDT|MST|MDT|PST|PDT|ET|PT|GMT|UTC)\b/, m=>tz[m]));
+  return isNaN(d.getTime()) ? new Date(0) : d;
+}
+
 function parseXML(xml){
   try{
     const doc = new DOMParser().parseFromString(xml,'text/xml');
@@ -130,7 +149,7 @@ function parseXML(xml){
       const title = el.querySelector('title')?.textContent?.trim() || '';
       const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
       const pub   = el.querySelector('pubDate,published,updated,date')?.textContent?.trim() || '';
-      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
+      return {title, link, pub, date: parseDate(pub)};
     }).filter(i=>i.title.length>3);
   }catch(e){ return []; }
 }
