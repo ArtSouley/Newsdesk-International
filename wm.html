@@ -22,27 +22,23 @@ header{display:flex;align-items:center;gap:12px;padding:0 16px;height:40px;flex-
 .btn{font-family:var(--mono);font-size:0.56rem;padding:3px 10px;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;border-radius:2px;transition:all .2s;white-space:nowrap;}
 .btn:hover{border-color:var(--accent);color:var(--accent);}
 
-.rows-wrap{flex:1;display:flex;flex-direction:column;gap:1px;background:var(--border);overflow:hidden;min-height:0;}
-.row{flex:1;display:flex;gap:1px;min-height:0;background:var(--border);}
-.row-label{width:60px;flex-shrink:0;background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-left:3px solid var(--accent);}
-.row-label .code{font-family:var(--mono);font-size:0.8rem;font-weight:600;color:var(--accent);letter-spacing:0.05em;}
-.row-label .sub{font-family:var(--mono);font-size:0.42rem;color:var(--dim);letter-spacing:0.15em;}
-
+.columns-wrap{flex:1;display:flex;gap:1px;background:var(--border);overflow:hidden;min-height:0;}
 .col{flex:1;display:flex;flex-direction:column;background:var(--panel);overflow:hidden;min-width:0;}
-.col-head{padding:5px 9px;background:var(--bg2);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:0.54rem;font-weight:600;letter-spacing:0.06em;flex-shrink:0;display:flex;align-items:center;}
+.col-head{padding:8px 11px;background:var(--bg2);border-bottom:1px solid var(--border);border-top:2px solid var(--accent);font-family:var(--mono);font-size:0.66rem;font-weight:600;letter-spacing:0.12em;flex-shrink:0;display:flex;align-items:center;}
 .col-name{flex:1;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .col-count{color:var(--dim);font-weight:400;padding-left:6px;}
 .col-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
 .col-items::-webkit-scrollbar{width:3px;}
 .col-items::-webkit-scrollbar-thumb{background:var(--border2);}
-.col-msg{padding:12px 10px;font-family:var(--mono);font-size:0.54rem;color:var(--dim);text-align:center;animation:pulse 1.5s infinite;}
+.col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.58rem;color:var(--dim);text-align:center;animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 
-.item{display:block;text-decoration:none;padding:8px 10px;border-bottom:1px solid var(--border);transition:background .12s;}
+.item{display:block;text-decoration:none;padding:9px 11px;border-bottom:1px solid var(--border);transition:background .12s;}
 .item:hover{background:rgba(232,160,32,.07);}
 .item:hover .item-title{color:var(--accent);}
-.item-title{font-size:0.74rem;line-height:1.4;color:var(--text);transition:color .12s;margin-bottom:3px;}
-.item-time{font-family:var(--mono);font-size:0.48rem;color:var(--accent);}
+.item-src{font-family:var(--mono);font-size:0.5rem;color:var(--accent);margin-bottom:3px;letter-spacing:0.04em;}
+.item-src .ago{color:var(--dim);}
+.item-title{font-size:0.79rem;line-height:1.46;color:var(--text);transition:color .12s;}
 
 .ticker{display:flex;align-items:center;height:22px;background:var(--bg2);border-top:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
 .ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:var(--bg);background:var(--accent);padding:0 10px;height:100%;display:flex;align-items:center;letter-spacing:0.14em;flex-shrink:0;}
@@ -61,69 +57,64 @@ header{display:flex;align-items:center;gap:12px;padding:0 16px;height:40px;flex-
   <div class="sep"></div>
   <div class="live">● LIVE</div>
   <div class="header-right">
-    <input type="text" id="search-box" placeholder="Suche (alle Reihen)…" oninput="render()"
+    <input type="text" id="search-box" placeholder="Suche (alle Spalten)…" oninput="render()"
       style="font-family:var(--mono);font-size:0.56rem;padding:2px 8px;background:var(--panel);border:1px solid var(--border2);color:var(--text);border-radius:2px;width:160px;outline:none;height:20px;">
     <span id="load-status"></span>
     <button class="btn" onclick="refreshAll()">⟳ REFRESH</button>
   </div>
 </header>
 
-<div class="rows-wrap" id="rows"></div>
-
-<div class="ticker">
-  <div class="ticker-lbl">LATEST</div>
-  <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Lädt…</span></div>
-</div>
+<div class="columns-wrap" id="columns"></div>
 
 <script>
-// Google-News-Suchfeed des jeweiligen Landes – als erste Spalte je Reihe und als Ersatz, falls eine echte URL nichts liefert.
+// Google-News-Suchfeed des Landes (WM + Nationalelf) – als Quelle und Ersatz.
 const GN = (q, hl='de', gl='DE') => `https://news.google.com/rss/search?q=${q}&hl=${hl}&gl=${gl}&ceid=${gl}:${hl.split('-')[0]}`;
 
-// 5 Reihen, jede Spalte: urls = [Haupt-Feed, Ersatz]. Erster Feed mit Inhalt gewinnt.
-const ROWS = [
-  { code:'DT', sub:'MEDIEN', feeds:[
-    {name:'GOOGLE NEWS DE', urls:[GN('Fussball-WM%202026%20OR%20DFB','de','DE')]},
-    {name:'kicker',         urls:['https://newsfeed.kicker.de/news/fussball','https://newsfeed.kicker.de/news/aktuell']},
-    {name:'SPORTSCHAU',     urls:['https://www.sportschau.de/fussball/index~rss2.xml',GN('Fussball%20WM%202026','de','DE')]},
-    {name:'SPIEGEL SPORT',  urls:['https://www.spiegel.de/sport/index.rss',GN('Fussball%20WM%202026','de','DE')]},
-    {name:'SPORT1',         urls:['https://www.sport1.de/news.rss',GN('Sport1%20Fussball%20WM','de','DE')]},
-    {name:'SPOX',           urls:['https://www.spox.com/pub/rss/fussball.xml','https://www.spox.com/pub/rss/sport.xml',GN('Fussball%20WM%202026','de','DE')]},
+// Eine Spalte pro Land. Alle Feeds der Spalte werden zu EINEM Strom gemischt.
+const COLUMNS = [
+  { label:'DT MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('Fussball-WM%202026%20OR%20DFB','de','DE')]},
+    {name:'kicker',      urls:['https://newsfeed.kicker.de/news/fussball','https://newsfeed.kicker.de/news/aktuell']},
+    {name:'Sportschau',  urls:['https://www.sportschau.de/fussball/index~rss2.xml']},
+    {name:'Spiegel',     urls:['https://www.spiegel.de/sport/index.rss']},
+    {name:'Sport1',      urls:[GN('site:sport1.de%20WM%20OR%20DFB%20OR%20Fussball','de','DE')]},
+    {name:'Spox',        urls:['https://www.spox.com/pub/rss/fussball.xml','https://www.spox.com/pub/rss/sport.xml']},
   ]},
-  { code:'US', sub:'MEDIEN', feeds:[
-    {name:'GOOGLE NEWS US', urls:[GN('World%20Cup%202026%20OR%20USMNT','en-US','US')]},
-    {name:'ESPN FC',        urls:['https://www.espn.com/espn/rss/soccer/news',GN('World%20Cup%202026','en-US','US')]},
-    {name:'NYT SOCCER',     urls:['https://rss.nytimes.com/services/xml/rss/nyt/Soccer.xml',GN('World%20Cup%202026','en-US','US')]},
-    {name:'YAHOO SPORTS',   urls:['https://sports.yahoo.com/soccer/rss/',GN('World%20Cup%202026%20USA','en-US','US')]},
+  { label:'US MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('World%20Cup%202026%20OR%20USMNT','en-US','US')]},
+    {name:'ESPN',        urls:['https://www.espn.com/espn/rss/soccer/news']},
+    {name:'NYT',         urls:['https://rss.nytimes.com/services/xml/rss/nyt/Soccer.xml']},
+    {name:'Yahoo',       urls:['https://sports.yahoo.com/soccer/rss/']},
   ]},
-  { code:'ENG', sub:'MEDIEN', feeds:[
-    {name:'GOOGLE NEWS UK', urls:[GN('World%20Cup%202026%20OR%20%22Three%20Lions%22','en-GB','GB')]},
-    {name:'GUARDIAN',       urls:['https://www.theguardian.com/football/rss',GN('World%20Cup%202026','en-GB','GB')]},
-    {name:'BBC SPORT',      urls:['https://feeds.bbci.co.uk/sport/football/rss.xml',GN('World%20Cup%202026','en-GB','GB')]},
-    {name:'SKY SPORTS',     urls:['https://www.skysports.com/rss/12040',GN('World%20Cup%202026%20football','en-GB','GB')]},
-    {name:'INDEPENDENT',    urls:['https://www.independent.co.uk/sport/football/rss',GN('World%20Cup%202026','en-GB','GB')]},
+  { label:'ENG MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('World%20Cup%202026%20OR%20%22Three%20Lions%22','en-GB','GB')]},
+    {name:'Guardian',    urls:['https://www.theguardian.com/football/rss']},
+    {name:'BBC',         urls:['https://feeds.bbci.co.uk/sport/football/rss.xml']},
+    {name:'Sky',         urls:['https://www.skysports.com/rss/12040']},
+    {name:'Independent', urls:['https://www.independent.co.uk/sport/football/rss']},
   ]},
-  { code:'SPA', sub:'MEDIEN', feeds:[
-    {name:'GOOGLE NEWS ES', urls:[GN('Mundial%202026%20OR%20seleccion','es','ES')]},
-    {name:'MARCA',          urls:['https://e00-marca.uecdn.es/rss/portada.xml',GN('Mundial%202026','es','ES')]},
-    {name:'AS',             urls:['https://feeds.as.com/mrss-s/pages/as/site/as.com/section/futbol/portada/',GN('Mundial%202026%20seleccion','es','ES')]},
-    {name:'MUNDO DEPORTIVO',urls:['https://www.mundodeportivo.com/feed/rss/home',GN('Mundial%202026','es','ES')]},
+  { label:'SPA MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('Mundial%202026%20OR%20seleccion','es','ES')]},
+    {name:'Marca',       urls:['https://e00-marca.uecdn.es/rss/portada.xml']},
+    {name:'AS',          urls:['https://feeds.as.com/mrss-s/pages/as/site/as.com/section/futbol/portada/']},
+    {name:'MundoDep.',   urls:['https://www.mundodeportivo.com/feed/rss/home']},
   ]},
-  { code:'ITA', sub:'MEDIEN', feeds:[
-    {name:'GOOGLE NEWS IT', urls:[GN('Mondiale%202026%20OR%20Nazionale','it','IT')]},
-    {name:'GAZZETTA',       urls:['https://www.gazzetta.it/rss/home.xml',GN('Mondiale%202026','it','IT')]},
-    {name:'CORRIERE SPORT', urls:['https://www.corrieredellosport.it/rss',GN('Mondiale%202026','it','IT')]},
-    {name:'TUTTOSPORT',     urls:['https://www.tuttosport.com/rss',GN('Mondiale%202026%20Italia','it','IT')]},
+  { label:'ITA MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('Mondiale%202026%20OR%20Nazionale','it','IT')]},
+    {name:'Gazzetta',    urls:['https://www.gazzetta.it/rss/home.xml']},
+    {name:'Corriere',    urls:[GN('site:corrieredellosport.it','it','IT')]},
+    {name:'Tuttosport',  urls:[GN('site:tuttosport.com','it','IT')]},
   ]},
-  { code:'FR', sub:'MEDIEN', feeds:[
-    {name:'GOOGLE NEWS FR', urls:[GN('Coupe%20du%20Monde%202026%20OR%20Bleus','fr','FR')]},
-    {name:'L\'ÉQUIPE',      urls:['https://www.lequipe.fr/rss/actu_rss_Football.xml',GN('Coupe%20du%20Monde%202026','fr','FR')]},
-    {name:'RMC SPORT',      urls:['https://rmcsport.bfmtv.com/rss/football/',GN('Coupe%20du%20Monde%202026','fr','FR')]},
-    {name:'LE FIGARO SPORT',urls:['https://www.lefigaro.fr/rss/figaro_sport.xml',GN('Coupe%20du%20Monde%202026','fr','FR')]},
+  { label:'FR MEDIEN', feeds:[
+    {name:'GoogleNews',  urls:[GN('Coupe%20du%20Monde%202026%20OR%20Bleus','fr','FR')]},
+    {name:'L\'Équipe',   urls:['https://dwh.lequipe.fr/api/edito/rss?path=/Football/']},
+    {name:'FranceInfo',  urls:['https://www.francetvinfo.fr/sports.rss']},
+    {name:'Figaro',      urls:['https://www.lefigaro.fr/rss/figaro_sport.xml']},
   ]},
 ];
 
-ROWS.forEach(r => r.feeds.forEach(f => { f.items=[]; f.status='pending'; }));
-const allFeeds = ROWS.flatMap(r => r.feeds);
+COLUMNS.forEach(c => c.feeds.forEach(f => { f.items=[]; f.done=false; }));
+const allFeeds = COLUMNS.flatMap(c => c.feeds);
 let loadedCount = 0;
 
 setInterval(()=>{
@@ -134,7 +125,7 @@ setInterval(()=>{
 function parseXML(xml){
   try{
     const doc = new DOMParser().parseFromString(xml,'text/xml');
-    return [...doc.querySelectorAll('item,entry')].slice(0,60).map(el=>{
+    return [...doc.querySelectorAll('item,entry')].slice(0,40).map(el=>{
       const title = el.querySelector('title')?.textContent?.trim() || '';
       const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
       const pub   = el.querySelector('pubDate,published,updated,date')?.textContent?.trim() || '';
@@ -157,47 +148,52 @@ async function fetchFeed(urls){
   return null;
 }
 
-function colHTML(feed, q){
-  const items = q ? feed.items.filter(i=>i.title.toLowerCase().includes(q)) : feed.items;
-  const st = feed.status;
-  const body =
-    st==='pending'||st==='loading' ? `<div class="col-msg">⟳ lädt…</div>` :
-    st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Nicht verfügbar</div>` :
-    items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
-      <div class="item-title">${esc(i.title)}</div><div class="item-time">${timeAgo(i.date)}</div></a>`).join('');
-  return `<div class="col"><div class="col-head"><span class="col-name">${esc(feed.name)}</span><span class="col-count">${st==='ok'?feed.items.length:''}</span></div><div class="col-items">${body}</div></div>`;
+// Alle Feeds einer Spalte zu einem Strom mischen (chronologisch, dedupliziert)
+function mergedItems(col){
+  const seen = new Set();
+  const out = [];
+  col.feeds.forEach(f => f.items.forEach(i => {
+    const key = i.title.toLowerCase().slice(0,60);
+    if(seen.has(key)) return;
+    seen.add(key);
+    out.push({...i, src:f.name});
+  }));
+  out.sort((a,b)=>b.date-a.date);
+  return out.slice(0,80);
 }
 
 function render(){
   const q = (document.getElementById('search-box')?.value || '').toLowerCase().trim();
-  document.getElementById('rows').innerHTML = ROWS.map(r=>
-    `<div class="row"><div class="row-label"><span class="code">${r.code}</span><span class="sub">${r.sub}</span></div>${r.feeds.map(f=>colHTML(f,q)).join('')}</div>`
-  ).join('');
-}
-
-function updateTicker(){
-  const latest = allFeeds.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
-  if(latest.length) document.getElementById('ticker-txt').textContent = latest.join('   //   ');
+  document.getElementById('columns').innerHTML = COLUMNS.map(col=>{
+    let items = mergedItems(col);
+    if(q) items = items.filter(i=>i.title.toLowerCase().includes(q));
+    const allDone = col.feeds.every(f=>f.done);
+    const body =
+      items.length ? items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
+          <div class="item-src">${esc(i.src)} <span class="ago">· ${timeAgo(i.date)}</span></div>
+          <div class="item-title">${esc(i.title)}</div></a>`).join('')
+      : allDone ? `<div class="col-msg" style="animation:none;color:#503030;">Nicht verfügbar</div>`
+      : `<div class="col-msg">⟳ lädt…</div>`;
+    return `<div class="col"><div class="col-head"><span class="col-name">${esc(col.label)}</span><span class="col-count">${items.length||''}</span></div><div class="col-items">${body}</div></div>`;
+  }).join('');
 }
 
 async function loadFeed(feed){
-  feed.status='loading'; render();
   try{
     const items = await fetchFeed(feed.urls);
-    if(!items || !items.length) throw new Error('empty');
-    items.sort((a,b)=>b.date-a.date);
-    feed.items=items; feed.status='ok';
-  }catch(e){ feed.status='fail'; }
+    feed.items = (items && items.length) ? items : [];
+  }catch(e){ feed.items = []; }
+  feed.done = true;
   loadedCount++;
-  const ok = allFeeds.filter(f=>f.status==='ok').length;
+  const ok = allFeeds.filter(f=>f.items.length).length;
   document.getElementById('load-status').textContent =
-    loadedCount<allFeeds.length ? `${loadedCount}/${allFeeds.length}…` : `✓ ${ok}/${allFeeds.length} aktiv`;
-  render(); updateTicker();
+    loadedCount<allFeeds.length ? `${loadedCount}/${allFeeds.length}…` : `✓ ${ok}/${allFeeds.length} Quellen`;
+  render();
 }
 
 async function refreshAll(){
   loadedCount=0;
-  allFeeds.forEach(f=>{f.items=[];f.status='pending';});
+  allFeeds.forEach(f=>{f.items=[];f.done=false;});
   render();
   await Promise.allSettled(allFeeds.map(loadFeed));
 }
