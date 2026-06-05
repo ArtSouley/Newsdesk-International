@@ -33,7 +33,7 @@ header{display:flex;align-items:center;gap:12px;padding:0 16px;height:40px;flex-
 .col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.58rem;color:var(--dim);text-align:center;animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 
-.item{display:block;text-decoration:none;padding:9px 11px;border-bottom:1px solid var(--border);transition:background .12s;}
+.item{display:block;text-decoration:none;padding:9px 11px;border-bottom:1px solid var(--border);transition:background .12s;-webkit-user-select:text;user-select:text;}
 .item:hover{background:rgba(232,160,32,.07);}
 .item:hover .item-title{color:var(--accent);}
 .item-src{font-family:var(--mono);font-size:0.56rem;color:var(--accent);margin-bottom:3px;letter-spacing:0.04em;}
@@ -204,7 +204,7 @@ function render(){
     if(q) items = items.filter(i=>i.title.toLowerCase().includes(q));
     const allDone = col.feeds.every(f=>f.done);
     const body =
-      items.length ? items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
+      items.length ? items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener" draggable="false">
           <div class="item-src">${esc(i.src)} <span class="ago">· ${timeAgo(i.date)}</span></div>
           <div class="item-title">${esc(i.title)}</div></a>`).join('')
       : allDone ? `<div class="col-msg" style="animation:none;color:#503030;">Nicht verfügbar</div>`
