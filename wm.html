@@ -233,6 +233,14 @@ async function refreshAll(){
   await Promise.allSettled(allFeeds.map(loadFeed));
 }
 
+// Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
+document.getElementById('columns').addEventListener('click', e=>{
+  const a = e.target.closest('a.item');
+  if(!a) return;
+  const sel = window.getSelection();
+  if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
+});
+
 refreshAll();
 setInterval(refreshAll, 300000);
 
