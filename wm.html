@@ -93,7 +93,11 @@ const COLUMNS = [
     {name:'NA Arg.',     urls:[GN('site:noticiasargentinas.com%20Mundial%20OR%20futbol','es-419','AR')]},
   ]},
   { label:'US MEDIEN', feeds:[
-    {name:'GoogleNews',  urls:[GN('World%20Cup%202026%20OR%20USMNT%20OR%20%22US%20Soccer%22%20OR%20FIFA%20World%20Cup','en-US','US')]},
+    {name:'GoogleNews',  urls:[
+      GN('World%20Cup%202026%20USMNT','en-US','US'),
+      GN('World%20Cup%202026%20soccer','en-US','US'),
+      GN('USMNT','en-US','US')
+    ]},
     {name:'ESPN',        urls:['https://www.espn.com/espn/rss/soccer/news']},
     {name:'NYT',         urls:['https://rss.nytimes.com/services/xml/rss/nyt/Soccer.xml']},
     {name:'Yahoo',       urls:['https://sports.yahoo.com/soccer/rss/']},
@@ -123,10 +127,20 @@ const COLUMNS = [
     {name:'FootMercato', urls:['https://www.footmercato.net/flux-rss']},
   ]},
   { label:'BRA MEDIEN', feeds:[
-    {name:'GoogleNews',  urls:[GN('Copa%20do%20Mundo%202026%20OR%20Selecao%20OR%20%22Selecao%20Brasileira%22%20OR%20Mundial%202026','pt-BR','BR')]},
+    {name:'GoogleNews',  urls:[
+      GN('Copa%20do%20Mundo%202026%20Selecao%20Brasileira','pt-BR','BR'),
+      GN('Copa%20do%20Mundo%202026%20Brasil','pt-BR','BR'),
+      GN('Selecao%20Brasileira%20futebol','pt-BR','BR'),
+      GN('futebol%20Brasil','pt-BR','BR')
+    ]},
   ]},
   { label:'ARG MEDIEN', feeds:[
-    {name:'GoogleNews',  urls:[GN('Mundial%202026%20OR%20%22seleccion%20argentina%22%20OR%20Albiceleste%20OR%20Scaloni','es-419','AR')]},
+    {name:'GoogleNews',  urls:[
+      GN('Mundial%202026%20seleccion%20argentina','es-419','AR'),
+      GN('seleccion%20argentina%20futbol','es-419','AR'),
+      GN('Mundial%202026%20Argentina','es-419','AR'),
+      GN('futbol%20Argentina','es-419','AR')
+    ]},
   ]},
   { label:'POR MEDIEN', feeds:[
     {name:'GoogleNews',  urls:[
