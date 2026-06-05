@@ -34,7 +34,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 .col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.6rem;color:var(--dim);text-align:center;animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 
-.item{display:block;text-decoration:none;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .12s;}
+.item{display:block;text-decoration:none;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .12s;-webkit-user-select:text;user-select:text;}
 .item:hover{background:rgba(232,160,32,.07);}
 .item:hover .item-title{color:var(--accent);}
 .item-title{font-size:0.8rem;line-height:1.48;color:var(--text);transition:color .12s;margin-bottom:4px;}
@@ -154,7 +154,7 @@ function render() {
     const body =
       st==='pending'||st==='loading' ? `<div class="col-msg">⟳ loading…</div>` :
       st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Not available</div>` :
-      items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
+      items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener" draggable="false">
         <div class="item-title">${esc(i.title)}</div>
         <div class="item-time">${timeAgo(i.date)}</div>
       </a>`).join('');
