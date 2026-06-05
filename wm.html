@@ -101,6 +101,14 @@ const COLUMNS = [
     {name:'ESPN',        urls:['https://www.espn.com/espn/rss/soccer/news']},
     {name:'NYT',         urls:['https://rss.nytimes.com/services/xml/rss/nyt/Soccer.xml']},
     {name:'Yahoo',       urls:['https://sports.yahoo.com/soccer/rss/']},
+    {name:'CBS',         urls:[GN('site:cbssports.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'USA Today',   urls:[GN('site:usatoday.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'Fox Sports',  urls:[GN('site:foxsports.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'NBC Sports',  urls:[GN('site:nbcsports.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'ABC News',    urls:[GN('site:abcnews.go.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'B/Report',    urls:[GN('site:bleacherreport.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'SI',          urls:[GN('site:si.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'SB Nation',   urls:['https://www.sbnation.com/rss/soccer/index.xml',GN('site:sbnation.com%20soccer','en-US','US')]},
   ]},
   { label:'ENG MEDIEN', feeds:[
     {name:'GoogleNews',  urls:[GN('World%20Cup%202026%20OR%20%22Three%20Lions%22%20OR%20England%20football%20OR%20FIFA%20World%20Cup','en-GB','GB')]},
@@ -118,6 +126,7 @@ const COLUMNS = [
     {name:'20 Minutos',  urls:['https://www.20minutos.es/rss/deportes/']},
     {name:'El Periódico',urls:['https://www.elperiodico.com/es/rss/deportes/rss.xml']},
     {name:'EuropaPress', urls:['https://www.europapress.es/rss/rss.aspx?ch=67']},
+    {name:'Telemundo',   urls:[GN('site:telemundodeportes.com%20Mundial%20OR%20futbol%20OR%20Copa','es-419','US')]},
   ]},
   { label:'FRA MEDIEN', feeds:[
     {name:'GoogleNews',  urls:[GN('Coupe%20du%20Monde%202026%20OR%20Mondial%202026%20OR%20Bleus%20OR%20%22Equipe%20de%20France%22','fr','FR')]},
