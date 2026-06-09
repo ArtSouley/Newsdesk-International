@@ -83,7 +83,7 @@ const COLUMNS = [
     {name:'Spox',        urls:['https://www.spox.com/pub/rss/fussball.xml','https://www.spox.com/pub/rss/sport.xml']},
   ]},
   { label:'AGENTUREN', feeds:[
-    {name:'GoogleNews',  urls:[GN('World%20Cup%202026%20OR%20Mundial%202026%20Reuters%20OR%20AP%20OR%20AFP%20OR%20EFE','en-US','US')]},
+    {name:'GoogleNews',  urls:[GN('World%20Cup%202026%20soccer','en-US','US')]},
     {name:'AP',          urls:[GN('site:apnews.com%20World%20Cup%20OR%20soccer','en-US','US')]},
     {name:'Reuters',     urls:[GN('site:reuters.com%20World%20Cup%20OR%20soccer','en-US','US')]},
     {name:'AFP',         urls:[GN('site:afp.com%20football%20OR%20Coupe%20du%20Monde','fr','FR')]},
@@ -173,10 +173,8 @@ async function tryUrl(url){
     `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   ];
   for(const p of proxies){
-    try{ const r=await fetch(p,{signal:AbortSignal.timeout(13000)}); if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
+    try{ const r=await fetch(p,{signal:AbortSignal.timeout(8000)}); if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
   }
-  try{ const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(13000)});
-    if(r.ok){ const j=await r.json(); if(j&&j.contents){ const it=parseXML(j.contents); if(it.length) return it; } } }catch(e){}
   return null;
 }
 async function fetchFeed(urls){
