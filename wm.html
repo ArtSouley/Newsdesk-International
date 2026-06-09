@@ -88,6 +88,7 @@ const COLUMNS = [
     {name:'Reuters',     urls:[GN('site:reuters.com%20World%20Cup%20OR%20soccer','en-US','US')]},
     {name:'AFP',         urls:[GN('site:afp.com%20football%20OR%20Coupe%20du%20Monde','fr','FR')]},
     {name:'EFE',         urls:[GN('site:efe.com%20Mundial%20OR%20futbol','es','ES')]},
+    {name:'Ag.Brasil',   urls:['https://agenciabrasil.ebc.com.br/rss/esportes/feed.xml']},
     {name:'Lusa',        urls:[GN('site:lusa.pt%20Mundial%20OR%20futebol','pt-PT','PT')]},
     {name:'NA Arg.',     urls:[GN('site:noticiasargentinas.com%20Mundial%20OR%20futbol','es-419','AR')]},
   ]},
@@ -98,7 +99,12 @@ const COLUMNS = [
       GN('USMNT','en-US','US')
     ]},
     {name:'ESPN',        urls:['https://www.espn.com/espn/rss/soccer/news']},
+    {name:'NYT',         urls:['https://rss.nytimes.com/services/xml/rss/nyt/Soccer.xml']},
     {name:'Yahoo',       urls:['https://sports.yahoo.com/soccer/rss/']},
+    {name:'CBS',         urls:[GN('site:cbssports.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'USA Today',   urls:[GN('site:usatoday.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'Fox Sports',  urls:[GN('site:foxsports.com%20soccer%20OR%20World%20Cup','en-US','US')]},
+    {name:'NBC Sports',  urls:[GN('site:nbcsports.com%20soccer%20OR%20World%20Cup','en-US','US')]},
     {name:'ABC News',    urls:[GN('site:abcnews.go.com%20soccer%20OR%20World%20Cup','en-US','US')]},
     {name:'SB Nation',   urls:['https://www.sbnation.com/rss/soccer/index.xml',GN('site:sbnation.com%20soccer','en-US','US')]},
   ]},
@@ -126,27 +132,6 @@ const COLUMNS = [
     {name:'FranceInfo',  urls:['https://www.francetvinfo.fr/sports.rss']},
     {name:'Figaro',      urls:['https://www.lefigaro.fr/rss/figaro_sport.xml']},
     {name:'FootMercato', urls:['https://www.footmercato.net/flux-rss']},
-  ]},
-  { label:'BRA MEDIEN', feeds:[
-    {name:'Ag.Brasil',   urls:['https://agenciabrasil.ebc.com.br/rss/esportes/feed.xml']},
-    {name:'AgBr Geral',  urls:['https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml']},
-    {name:'Folha',       urls:['https://feeds.folha.uol.com.br/esporte/rss091.xml']},
-  ]},
-  { label:'ARG MEDIEN', feeds:[
-    {name:'GoogleNews',  urls:[
-      GN('Mundial%202026%20seleccion%20argentina','es-419','AR'),
-      GN('seleccion%20argentina%20futbol','es-419','AR'),
-      GN('Mundial%202026%20Argentina','es-419','AR'),
-      GN('futbol%20Argentina','es-419','AR')
-    ]},
-  ]},
-  { label:'POR MEDIEN', feeds:[
-    {name:'GoogleNews',  urls:[
-      GN('Mundial%202026%20OR%20%22Selecao%20Portugal%22%20OR%20Campeonato%20do%20Mundo%20OR%20Portugal%20futebol','pt-PT','PT'),
-      GN('Portugal%20futebol%20Mundial%202026','pt-PT','PT'),
-      GN('Mundial%202026','pt-PT','PT'),
-      GN('Portugal%20futebol','pt-PT','PT')
-    ]},
   ]},
 ];
 
