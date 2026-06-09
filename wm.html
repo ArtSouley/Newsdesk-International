@@ -193,12 +193,16 @@ function parseXML(xml){
 }
 
 async function tryUrl(url){
-  try{ const r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(14000)});
-    if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
-  try{ const r=await fetch(url,{signal:AbortSignal.timeout(9000)});
-    if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
-  try{ const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(11000)});
-    if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  ];
+  for(const p of proxies){
+    try{ const r=await fetch(p,{signal:AbortSignal.timeout(13000)}); if(r.ok){ const it=parseXML(await r.text()); if(it.length) return it; } }catch(e){}
+  }
+  try{ const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(13000)});
+    if(r.ok){ const j=await r.json(); if(j&&j.contents){ const it=parseXML(j.contents); if(it.length) return it; } } }catch(e){}
   return null;
 }
 async function fetchFeed(urls){
@@ -249,11 +253,18 @@ async function loadFeed(feed){
   render();
 }
 
+// Drossel: immer nur wenige Feeds gleichzeitig laden, sonst macht der Proxy bei 49 Quellen dicht
+async function runPool(items, limit, worker){
+  let i = 0;
+  const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
+}
+
 async function refreshAll(){
   loadedCount=0;
   allFeeds.forEach(f=>{f.items=[];f.done=false;});
   render();
-  await Promise.allSettled(allFeeds.map(loadFeed));
+  await runPool(allFeeds, 5, loadFeed);
 }
 
 // Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
