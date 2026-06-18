@@ -143,6 +143,21 @@ async function fetchFeed(url) {
       if (text) { const items = parseXML(text); if (items.length > 0) return items; }
     } catch(e) {}
   }
+  // 6. rss2json – holt den Feed serverseitig und liefert JSON (greift oft, wo Proxys geblockt werden, z. B. t-online)
+  try {
+    const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
+        return j.items.slice(0,50).map(it=>({
+          title: (it.title||'').trim(),
+          link:  it.link || '#',
+          pub:   it.pubDate || '',
+          date:  it.pubDate ? new Date(it.pubDate) : new Date(0)
+        })).filter(i=>i.title.length>3);
+      }
+    }
+  } catch(e) {}
   return null;
 }
 
