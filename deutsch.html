@@ -77,13 +77,9 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 const FEEDS = [
   {name:'SPIEGEL',    url:'https://www.spiegel.de/schlagzeilen/index.rss'},
   {name:'BILD',       url:'https://www.bild.de/rss-feeds/rss-16725492,feed=home.bild.html'},
-  {name:'T-ONLINE',   url:'https://www.t-online.de/schlagzeilen/feed.rss',
-                      merge:['https://www.t-online.de/feed.rss',
-                             'https://www.t-online.de/nachrichten/feed.rss',
-                             'https://www.t-online.de/nachrichten/panorama/feed.rss',
-                             'https://www.t-online.de/region/feed.rss',
-                             'https://www.t-online.de/finanzen/feed.rss',
-                             'https://www.t-online.de/sport/feed.rss']},
+  {name:'T-ONLINE',   url:'https://www.t-online.de/feed.rss',
+                      merge:['https://www.t-online.de/schlagzeilen/feed.rss',
+                             'https://www.t-online.de/nachrichten/feed.rss']},
   {name:'NTV',        url:'https://www.n-tv.de/home/Das_Neueste/rss'},
   {name:'DLF',        url:'https://www.deutschlandfunk.de/die-nachrichten.353.de.rss'},
   {name:'EURONEWS',   url:'https://de.euronews.com/rss?format=mrss&level=theme&name=news'},
@@ -151,7 +147,7 @@ async function fetchFeed(url) {
   }
   // 6. rss2json – holt den Feed serverseitig und liefert JSON (greift oft, wo Proxys geblockt werden, z. B. t-online)
   try {
-    const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
+    const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
     if (r.ok) {
       const j = await r.json();
       if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
