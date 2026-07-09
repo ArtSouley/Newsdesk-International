@@ -77,7 +77,13 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 const FEEDS = [
   {name:'SPIEGEL',    url:'https://www.spiegel.de/schlagzeilen/index.rss'},
   {name:'BILD',       url:'https://www.bild.de/rss-feeds/rss-16725492,feed=home.bild.html'},
-  {name:'T-ONLINE',   url:'https://www.t-online.de/schlagzeilen/feed.rss'},
+  {name:'T-ONLINE',   url:'https://www.t-online.de/schlagzeilen/feed.rss',
+                      merge:['https://www.t-online.de/feed.rss',
+                             'https://www.t-online.de/nachrichten/feed.rss',
+                             'https://www.t-online.de/nachrichten/panorama/feed.rss',
+                             'https://www.t-online.de/region/feed.rss',
+                             'https://www.t-online.de/finanzen/feed.rss',
+                             'https://www.t-online.de/sport/feed.rss']},
   {name:'NTV',        url:'https://www.n-tv.de/home/Das_Neueste/rss'},
   {name:'DLF',        url:'https://www.deutschlandfunk.de/die-nachrichten.353.de.rss'},
   {name:'EURONEWS',   url:'https://de.euronews.com/rss?format=mrss&level=theme&name=news'},
@@ -187,10 +193,19 @@ function render() {
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
-    const items = await fetchFeed(feed.url);
+    let items = await fetchFeed(feed.url);
+    // Zusatz-Feeds derselben Quelle dazumischen (z. B. t-online Schlagzeilen + Politik + Panorama)
+    if (feed.merge && feed.merge.length) {
+      for (const u of feed.merge) {
+        try { const extra = await fetchFeed(u); if (extra && extra.length) items = (items||[]).concat(extra); } catch(e) {}
+      }
+    }
     if (!items || items.length === 0) throw new Error('no items');
+    // Dubletten anhand des Titels entfernen
+    const seen = new Set();
+    items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
-    feed.items  = items;
+    feed.items  = items.slice(0,60);
     feed.status = 'ok';
   } catch(e) {
     feed.status = 'fail';
