@@ -75,7 +75,9 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 
 <script>
 const FEEDS = [
-  {name:'SPECTATOR',  url:'https://www.spectator-index.com/api/rss'},
+  {name:'SPECTATOR',  url:'https://indexbriefing.com/feed/',
+                      alt:['https://indexbriefing.com/rss',
+                           'https://www.spectator-index.com/api/rss']},
   {name:'BAHA',       url:'https://breakingthenews.net/news-feed.xml'},
   {name:'FRANCE 24',  url:'https://www.france24.com/en/live-news/rss'},
   {name:'LE MONDE',   url:'https://www.lemonde.fr/rss/une.xml'},
@@ -170,7 +172,14 @@ function render() {
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
-    const items = await fetchFeed(feed.url);
+    let items = await fetchFeed(feed.url);
+    // Ersatz-Adressen probieren, falls die Haupt-URL nichts liefert
+    if ((!items || !items.length) && feed.alt) {
+      for (const u of feed.alt) {
+        items = await fetchFeed(u);
+        if (items && items.length) break;
+      }
+    }
     if (!items || items.length === 0) throw new Error('no items');
     items.sort((a, b) => b.date - a.date);
     feed.items  = items;
