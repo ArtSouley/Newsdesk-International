@@ -43,7 +43,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 .ticker{display:flex;align-items:center;height:22px;background:var(--bg2);border-top:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
 .ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:var(--bg);background:var(--accent);padding:0 10px;height:100%;display:flex;align-items:center;letter-spacing:0.18em;flex-shrink:0;}
 .ticker-track{flex:1;overflow:hidden;}
-.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.75rem;color:var(--accent);animation:scroll 45s linear infinite;}
+.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.75rem;color:var(--accent);animation:scroll 80s linear infinite;}
 .ticker-txt:hover{animation-play-state:paused;}
 @keyframes scroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
 </style>
@@ -78,6 +78,8 @@ const FEEDS = [
   {name:'AL JAZEERA', url:'https://www.aljazeera.com/xml/rss/all.xml'},
   {name:'BAHA',       url:'https://breakingthenews.net/news-feed.xml'},
   {name:'FRANCE 24',  url:'https://www.france24.com/en/live-news/rss'},
+  {name:'POLITICO',   url:'https://rss.politico.com/politics-news.xml',
+                      alt:['https://www.politico.com/rss/politicopicks.xml']},
   {name:'DW',         url:'https://rss.dw.com/rdf/rss-en-all',
                       alt:['https://rss.dw.com/rdf/rss-en-top']},
   {name:'BBC',        url:'https://feeds.bbci.co.uk/news/rss.xml'},
@@ -102,7 +104,9 @@ function parseXML(xml) {
     const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
       const title = el.querySelector('title')?.textContent?.trim() || '';
       const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
-      const pub   = el.querySelector('pubDate,published,updated')?.textContent?.trim() || '';
+      const pub   = (el.querySelector('pubDate,published,updated')?.textContent
+                     || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
+                     || '').trim();
       return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
     });
     return items.filter(i=>i.title.length>3);
