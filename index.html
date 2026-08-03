@@ -86,7 +86,9 @@ const FEEDS = [
   {name:'ABC',        url:'https://feeds.abcnews.com/abcnews/topstories'},
   {name:'GUARDIAN',   url:'https://feeds.guardian.co.uk/theguardian/world/rss'},
   {name:'AA',         url:'https://www.aa.com.tr/en/rss/default?cat=live'},
-  {name:'SKY NEWS',   url:'https://feeds.skynews.com/feeds/rss/world.xml'},
+  {name:'SKY NEWS',   url:'https://feeds.skynews.com/feeds/rss/world.xml',
+                      merge:['https://feeds.skynews.com/feeds/rss/home.xml',
+                             'https://feeds.skynews.com/feeds/rss/politics.xml']},
 ];
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
@@ -184,9 +186,18 @@ async function loadFeed(feed) {
         if (items && items.length) break;
       }
     }
+    // Zusatz-Feeds derselben Quelle dazumischen (mehr Volumen)
+    if (feed.merge && feed.merge.length) {
+      for (const u of feed.merge) {
+        try { const extra = await fetchFeed(u); if (extra && extra.length) items = (items||[]).concat(extra); } catch(e) {}
+      }
+    }
     if (!items || items.length === 0) throw new Error('no items');
+    // Dubletten anhand des Titels entfernen
+    const seen = new Set();
+    items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
-    feed.items  = items;
+    feed.items  = items.slice(0,60);
     feed.status = 'ok';
   } catch(e) {
     feed.status = 'fail';
