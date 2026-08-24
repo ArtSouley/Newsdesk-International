@@ -107,7 +107,7 @@ function parseXML(xml) {
   try {
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
     const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
-      const title = el.querySelector('title')?.textContent?.trim() || '';
+      const title = (el.querySelector('title')?.textContent || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
       const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
       const pub   = (el.querySelector('pubDate,published,updated')?.textContent
                      || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
@@ -119,38 +119,31 @@ function parseXML(xml) {
 }
 
 async function fetchFeed(url) {
-  // Strategie 1: AllOrigins (ECHTE XML-Daten mit korrekten Zeitstempeln!)
+  const strategies = [
+    async () => { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); if(!r.ok) return null; const j = await r.json(); return j && j.contents ? j.contents : null; },
+    async () => { const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(url, {signal:AbortSignal.timeout(10000)}); return r.ok ? await r.text() : null; },
+  ];
+  for (const strat of strategies) {
+    try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
+  }
+  // rss2json – holt den Feed serverseitig (greift oft, wo Proxys geblockt werden)
   try {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(15000)});
-    if (res.ok) {
-      const text = await res.text();
-      const items = parseXML(text);
-      if (items.length > 0) return items;
+    const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
+        return j.items.slice(0,50).map(it=>({
+          title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
+          link:  it.link || '#',
+          pub:   it.pubDate || '',
+          date:  it.pubDate ? new Date(it.pubDate) : new Date(0)
+        })).filter(i=>i.title.length>3);
+      }
     }
   } catch(e) {}
-  
-  // Strategie 2: Direkter Zugriff
-  try {
-    const res = await fetch(url, {signal: AbortSignal.timeout(10000)});
-    if (res.ok) {
-      const text = await res.text();
-      const items = parseXML(text);
-      if (items.length > 0) return items;
-    }
-  } catch(e) {}
-  
-  // Strategie 3: CORS Proxy
-  try {
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl, {signal: AbortSignal.timeout(12000)});
-    if (res.ok) {
-      const text = await res.text();
-      const items = parseXML(text);
-      if (items.length > 0) return items;
-    }
-  } catch(e) {}
-  
   return null;
 }
 
