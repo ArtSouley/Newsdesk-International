@@ -120,6 +120,7 @@ function parseXML(xml) {
 
 async function fetchFeed(url) {
   const strategies = [
+    async () => { const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
     async () => { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
     async () => { const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
     async () => { const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); if(!r.ok) return null; const j = await r.json(); return j && j.contents ? j.contents : null; },
@@ -206,12 +207,19 @@ async function loadFeed(feed) {
   render();
 }
 
+// Drossel: immer nur wenige Feeds gleichzeitig, sonst drosseln die Gratis-Proxys alles weg
+async function runPool(items, limit, worker){
+  let i = 0;
+  const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
+}
+
 async function refreshAll() {
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
   document.getElementById('load-status').textContent = 'loading…';
   render();
-  await Promise.allSettled(data.map(loadFeed));
+  await runPool(data, 3, loadFeed);
 }
 
 // Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
