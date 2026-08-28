@@ -114,6 +114,11 @@ function parseXML(xml) {
 // Mehrere Proxy-Wege nacheinander – der erste, der gültiges RSS liefert, gewinnt.
 async function fetchFeed(url) {
   const strategies = [
+    // 0. Eigener Cloudflare-Proxy (stabil, kein Rate-Limit)
+    async () => {
+      const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)});
+      return r.ok ? await r.text() : null;
+    },
     // 1. AllOrigins (raw)
     async () => {
       const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)});
