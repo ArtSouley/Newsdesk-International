@@ -219,7 +219,7 @@ async function refreshAll() {
   data.forEach(f=>{f.items=[];f.status='pending';});
   document.getElementById('load-status').textContent = 'loading…';
   render();
-  await runPool(data, 3, loadFeed);
+  await runPool(data, 6, loadFeed);
 }
 
 // Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
@@ -231,7 +231,7 @@ document.getElementById('columns').addEventListener('click', e=>{
 });
 
 refreshAll();
-setInterval(refreshAll, 300000);
+setInterval(refreshAll, 120000);
 
 function timeAgo(d) {
   if(!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
