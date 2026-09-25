@@ -38,6 +38,8 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 .item:hover{background:rgba(232,160,32,.07);}
 .item:hover .item-title{color:var(--accent);}
 .item-title{font-size:0.8rem;line-height:1.48;color:var(--text);transition:color .12s;margin-bottom:4px;}
+.item-title.urgent{color:var(--red);font-weight:600;}
+.item:hover .item-title.urgent{color:var(--red);}
 .item-time{font-family:var(--mono);font-size:0.5rem;color:var(--accent);}
 
 .ticker{display:flex;align-items:center;height:22px;background:var(--bg2);border-top:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
@@ -163,7 +165,7 @@ function render() {
       st==='pending'||st==='loading' ? `<div class="col-msg">⟳ loading…</div>` :
       st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Not available</div>` :
       items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener" draggable="false">
-        <div class="item-title">${esc(i.title)}</div>
+        <div class="item-title${isUrgent(i.title)?' urgent':''}">${esc(i.title)}</div>
         <div class="item-time">${timeAgo(i.date)}</div>
       </a>`).join('');
     return `<div class="col">
@@ -246,6 +248,9 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} hr`;
   return `${Math.floor(m/1440)}d`;
 }
+// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter (EN + FR) → ganze Schlagzeile rot
+const URGENT = /(\bbreaking\b|\bjust in\b|\burgent\b|\bexclusive\b|\bexclusif\b|\balert\b|\balerte\b|\bderni[eè]re minute\b|\bflash\b)/i;
+function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
 </body>
