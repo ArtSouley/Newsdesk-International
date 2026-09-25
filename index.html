@@ -44,7 +44,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 .col.top-col{flex:1.7;}
 .top-col .col-name{color:var(--red);}
 .item-src{font-family:var(--mono);font-size:0.52rem;color:var(--text2);margin-bottom:3px;white-space:normal;line-height:1.3;}
-.badge{display:inline-block;background:var(--red);color:#fff;font-weight:600;padding:0 5px;border-radius:8px;font-size:0.56rem;margin-right:5px;}
+.badge{display:inline-block;background:var(--red);color:#fff;font-weight:600;padding:0 5px;border-radius:8px;font-size:0.56rem;margin-right:5px;cursor:help;}
 
 .ticker{display:flex;align-items:center;height:22px;background:var(--bg2);border-top:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
 .ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:var(--bg);background:var(--accent);padding:0 10px;height:100%;display:flex;align-items:center;letter-spacing:0.18em;flex-shrink:0;}
@@ -104,6 +104,19 @@ const FEEDS = [
 ];
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
+
+// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigenes Panel)
+const EXTRA_FEEDS = [
+  {name:'Google News',url:'https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en'},
+  {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
+  {name:'NYT',        url:'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml'},
+  {name:'Wash.Post',  url:'http://feeds.washingtonpost.com/rss/world'},
+  {name:'Al Arabiya', url:'https://english.alarabiya.net/feed/flipboard/en.xml'},
+  {name:'Politico',   url:'https://rss.politico.com/politics-news.xml'},
+  {name:'Politico EU',url:'https://www.politico.eu/feed/'},
+  {name:'NY Post',    url:'https://nypost.com/feed/'},
+];
+const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
 
 setInterval(()=>{
@@ -168,7 +181,7 @@ function sigWords(t){
 }
 function topClusters(){
   const all=[];
-  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name,words:sigWords(i.title)})); });
+  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name,words:sigWords(i.title)})); });
   all.sort((a,b)=>b.date-a.date);
   const clusters=[];
   for(const it of all){
@@ -192,9 +205,9 @@ function topColumnHTML(q){
   let cl = topClusters();
   if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q));
   const body = cl.length ? cl.map(c=>{
-    const n=c.sources.size, srcs=[...c.sources].join(' · ');
+    const n=c.sources.size, full=[...c.sources].join(', ');
     return `<a class="item" href="${c.link}" target="_blank" rel="noopener" draggable="false">
-      <div class="item-src"><span class="badge">×${n}</span>${esc(srcs)}</div>
+      <div class="item-src"><span class="badge" title="${esc(full)}">×${n}</span></div>
       <div class="item-title${isUrgent(c.title)?' urgent':''}">${esc(c.title)}</div>
       <div class="item-time">${timeAgo(c.date)}</div></a>`;
   }).join('') : `<div class="col-msg" style="animation:none;color:var(--dim);">Noch keine Mehrfach-Meldung</div>`;
@@ -270,12 +283,24 @@ async function runPool(items, limit, worker){
   await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
 }
 
+// Hintergrund-Quelle laden: nur Items sammeln (für TOP), keine eigene Spalte, kein Zähler
+async function loadExtra(feed){
+  try{
+    let items = await fetchFeed(feed.url);
+    if((!items||!items.length) && feed.alt){ for(const u of feed.alt){ items=await fetchFeed(u); if(items&&items.length) break; } }
+    feed.items = (items&&items.length)? items.slice(0,60) : [];
+  }catch(e){ feed.items=[]; }
+  feed.status = feed.items.length ? 'ok' : 'fail';
+  render();
+}
+
 async function refreshAll() {
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
+  extra.forEach(f=>{f.items=[];f.status='pending';});
   document.getElementById('load-status').textContent = 'loading…';
   render();
-  await runPool(data, 6, loadFeed);
+  await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
 }
 
 // Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
