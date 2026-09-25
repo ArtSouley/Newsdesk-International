@@ -95,6 +95,20 @@ const FEEDS = [
 ];
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
+
+// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigenes Panel)
+const EXTRA_FEEDS = [
+  {name:'Google News', url:'https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de'},
+  {name:'tagesschau',  url:'https://www.tagesschau.de/xml/rss2'},
+  {name:'Tagesspiegel',url:'https://www.tagesspiegel.de/contentexport/feed/home'},
+  {name:'FAZ',         url:'https://www.faz.net/rss/aktuell'},
+  {name:'SZ',          url:'https://www.sueddeutsche.de/news/rss'},
+  {name:'ZEIT',        url:'https://newsfeed.zeit.de/all'},
+  {name:'RND',         url:'https://www.rnd.de/arc/outboundfeeds/rss/?outputType=xml'},
+  {name:'Handelsblatt',url:'https://www.handelsblatt.com/contentexport/feed/schlagzeilen'},
+  {name:'RP Online',   url:'https://rp-online.de/feed.rss'},
+];
+const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
 
 setInterval(()=>{
@@ -187,7 +201,7 @@ function sigWords(t){
 }
 function topClusters(){
   const all=[];
-  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name,words:sigWords(i.title)})); });
+  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name,words:sigWords(i.title)})); });
   all.sort((a,b)=>b.date-a.date);
   const clusters=[];
   for(const it of all){
@@ -211,9 +225,9 @@ function topColumnHTML(q){
   let cl = topClusters();
   if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q));
   const body = cl.length ? cl.map(c=>{
-    const n=c.sources.size, srcs=[...c.sources].join(' · ');
+    const n=c.sources.size, full=[...c.sources].join(', ');
     return `<a class="item" href="${c.link}" target="_blank" rel="noopener">
-      <div class="item-src"><span class="badge">×${n}</span>${esc(srcs)}</div>
+      <div class="item-src"><span class="badge" title="${esc(full)}">×${n}</span></div>
       <div class="item-title${isUrgent(c.title)?' urgent':''}">${esc(c.title)}</div>
       <div class="item-time">${timeAgo(c.date)}</div></a>`;
   }).join('') : `<div class="col-msg" style="animation:none;color:var(--dim);">Noch keine Mehrfach-Meldung</div>`;
@@ -275,12 +289,24 @@ async function loadFeed(feed) {
   render();
 }
 
+// Hintergrund-Quelle laden: nur Items sammeln (für TOP), keine eigene Spalte, kein Zähler
+async function loadExtra(feed){
+  try{
+    let items = await fetchFeed(feed.url);
+    if((!items||!items.length) && feed.alt){ for(const u of feed.alt){ items=await fetchFeed(u); if(items&&items.length) break; } }
+    feed.items = (items&&items.length)? items.slice(0,60) : [];
+  }catch(e){ feed.items=[]; }
+  feed.status = feed.items.length ? 'ok' : 'fail';
+  render();
+}
+
 async function refreshAll() {
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
+  extra.forEach(f=>{f.items=[];f.status='pending';});
   document.getElementById('load-status').textContent = 'lädt…';
   render();
-  await Promise.allSettled(data.map(loadFeed));
+  await Promise.allSettled([...data.map(loadFeed), ...extra.map(loadExtra)]);
 }
 
 refreshAll();
