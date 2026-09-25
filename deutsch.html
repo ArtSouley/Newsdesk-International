@@ -218,8 +218,12 @@ function topClusters(){
       clusters.push({title:it.title,link:it.link,date:it.date,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
-  return clusters.filter(c=>c.sources.size>=2)
-                 .sort((a,b)=> b.sources.size-a.sources.size || b.date-a.date);
+  // "Hotness": viele Quellen zählen, aber Frische stark – nur Storys der letzten 2 Stunden;
+  // wird 2 Std. lang nichts Neues gemeldet, fällt das Thema ganz raus.
+  const now = Date.now();
+  const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
+  const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
+  return clusters.filter(c=>c.sources.size>=2 && ageH(c) <= 2).sort((a,b)=> hot(b)-hot(a));
 }
 function topColumnHTML(q){
   let cl = topClusters();
