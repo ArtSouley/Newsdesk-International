@@ -245,23 +245,14 @@ function topColumnHTML(q){
   </div>`;
 }
 
-// Ticker-Ströme: quellen-ausgewogen mischen (keine Quelle flutet) – erst die
-// neueste Meldung JEDER Quelle, dann die zweitneueste jeder Quelle usw.
+// Ticker-Ströme: alle Hauptquellen zusammen, streng nach Zeit (neueste zuerst),
+// entdoppelt. Aufgeteilt wird spaltenweise: Strom 1 = neueste, Strom 5 = älteste.
 function streamList(q){
   const all=[];
   data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name})); });
   all.sort((a,b)=>b.date-a.date);
-  const seen=new Set(), bySrc=new Map();
-  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k);
-    if(!bySrc.has(i.src)) bySrc.set(i.src,[]); bySrc.get(i.src).push(i); }
-  const queues=[...bySrc.values()];
-  let list=[], round=0, more=true;
-  while(more){
-    more=false; const r=[];
-    for(const que of queues){ if(que[round]){ r.push(que[round]); more=true; } }
-    r.sort((a,b)=>b.date-a.date);
-    list=list.concat(r); round++;
-  }
+  const seen=new Set(); let list=[];
+  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k); list.push(i); }
   if(q) list = list.filter(i=>i.title.toLowerCase().includes(q));
   return list;
 }
@@ -281,7 +272,8 @@ function streamColHTML(arr, loading){
 function render() {
   const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
   const list = streamList(q);
-  const cols=[[],[],[],[],[]]; list.forEach((m,idx)=> cols[idx%5].push(m));
+  const N=5, per=Math.max(1, Math.ceil(list.length/N));
+  const cols=Array.from({length:N},(_,k)=>list.slice(k*per,(k+1)*per));
   const loading = data.every(f=>f.status==='pending'||f.status==='loading');
   document.getElementById('columns').innerHTML =
     topColumnHTML(q) + cols.map(c=>streamColHTML(c, loading)).join('');
