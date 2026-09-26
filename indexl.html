@@ -1,69 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NewsDesk Speedboat INT</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0c0f;--bg2:#0f1318;--panel:#111518;--border:#1c2530;--border2:#243040;--accent:#e8a020;--red:#e04455;--text:#ccd8e0;--text2:#7a9aaa;--dim:#354555;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+:root{
+  color-scheme:dark;
+  --bg:#0d1117;--panel:#151b23;--panel2:#1b232d;
+  --ink:#e7eef6;--muted:#93a3b2;--faint:#5f6d7a;
+  --line:#222c37;--line2:#2c3742;
+  --accent:#4a9eff;--urgent:#ff5666;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);}
-body{display:flex;flex-direction:column;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;flex-direction:column;overflow:hidden;}
 
-header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-shrink:0;background:var(--bg2);border-bottom:2px solid var(--accent);}
-.logo{font-family:var(--mono);font-weight:600;font-size:0.75rem;letter-spacing:0.28em;color:var(--accent);}
-.sep{width:1px;height:18px;background:var(--border2);}
-#clock{font-family:var(--mono);font-size:0.75rem;color:var(--text2);}
-.live{font-family:var(--mono);font-size:0.58rem;color:var(--red);letter-spacing:0.2em;animation:blink 2s infinite;}
+header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--line2);}
+.logo{font-family:var(--mono);font-weight:600;font-size:0.72rem;letter-spacing:0.22em;color:var(--accent);}
+.sep{width:1px;height:16px;background:var(--line2);}
+#clock{font-family:var(--mono);font-size:0.72rem;color:var(--muted);font-variant-numeric:tabular-nums;}
+.live{font-family:var(--mono);font-size:0.56rem;color:var(--urgent);letter-spacing:0.18em;display:flex;align-items:center;gap:5px;}
+.live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--urgent);animation:blink 2s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 .header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-#load-status{font-family:var(--mono);font-size:0.6rem;color:var(--accent);}
-.btn{font-family:var(--mono);font-size:0.58rem;padding:3px 10px;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;border-radius:2px;transition:all .2s;}
+#load-status{font-family:var(--mono);font-size:0.6rem;color:var(--muted);}
+.btn{font-family:var(--mono);font-size:0.58rem;padding:4px 11px;background:var(--panel2);border:1px solid var(--line2);color:var(--muted);cursor:pointer;border-radius:5px;transition:all .15s;}
 .btn:hover{border-color:var(--accent);color:var(--accent);}
-.btn-red{border-color:#3a2020;color:#604040;}
-.btn-red:hover{border-color:var(--red);color:var(--red);}
 
-/* LOGIN */
-#login-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:40px;}
-#login-screen h1{font-family:var(--mono);font-size:0.9rem;color:var(--accent);letter-spacing:0.25em;}
-.login-box{background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:24px;width:360px;display:flex;flex-direction:column;gap:12px;}
-.login-box label{font-family:var(--mono);font-size:0.58rem;color:var(--dim);letter-spacing:0.1em;}
-.login-box input{width:100%;padding:8px 10px;background:var(--panel);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:0.7rem;border-radius:2px;}
-.login-box input:focus{outline:none;border-color:var(--accent);}
-.login-submit{width:100%;padding:9px;background:var(--accent);color:var(--bg);border:none;cursor:pointer;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.15em;border-radius:2px;transition:opacity .2s;}
-.login-submit:hover{opacity:.85;}
-#login-error{font-family:var(--mono);font-size:0.6rem;color:var(--red);text-align:center;display:none;}
-.login-note{font-family:var(--mono);font-size:0.52rem;color:var(--dim);text-align:center;line-height:1.8;}
-
-/* TICKER */
-.ticker{display:flex;align-items:center;height:26px;background:var(--bg2);border-bottom:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
-.ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:var(--bg);background:var(--accent);padding:0 10px;height:100%;display:flex;align-items:center;letter-spacing:0.18em;flex-shrink:0;}
-.ticker-track{flex:1;overflow:hidden;}
-.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.75rem;color:var(--accent);animation:scroll 45s linear infinite;}
-.ticker-txt:hover{animation-play-state:paused;}
-@keyframes scroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
-.search-wrap{display:flex;align-items:center;gap:6px;padding:0 10px;flex-shrink:0;}
-#search-box{font-family:var(--mono);font-size:0.58rem;padding:1px 7px;background:var(--panel);border:1px solid var(--border2);color:var(--text);border-radius:2px;width:160px;outline:none;height:18px;}
+.ticker{display:flex;align-items:center;height:26px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;}
+.ticker-left{display:flex;align-items:center;gap:7px;padding:0 12px;flex-shrink:0;}
+#search-box{font-family:var(--mono);font-size:0.6rem;padding:3px 9px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:5px;width:170px;outline:none;}
 #search-box:focus{border-color:var(--accent);}
-#search-count{font-family:var(--mono);font-size:0.52rem;color:var(--dim);white-space:nowrap;}
+#search-count{font-family:var(--mono);font-size:0.52rem;color:var(--faint);white-space:nowrap;}
+.ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:#fff;background:var(--accent);padding:0 11px;height:100%;display:flex;align-items:center;letter-spacing:0.16em;}
+.ticker-track{flex:1;overflow:hidden;}
+.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.7rem;color:var(--muted);animation:scroll 80s linear infinite;padding-left:100%;}
+.ticker-txt:hover{animation-play-state:paused;}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
-/* COLUMNS */
-.columns-wrap{flex:1;display:flex;gap:1px;background:var(--border);overflow:hidden;min-height:0;}
-.col{flex:1;min-width:200px;display:flex;flex-direction:column;background:var(--panel);overflow:hidden;}
-.col-head{padding:6px 8px;background:var(--bg2);border-bottom:1px solid var(--border);border-top:2px solid var(--accent);font-family:var(--mono);font-size:0.55rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;}
-.col-name{flex:1;color:var(--accent);}
-.col-count{color:var(--dim);font-weight:400;}
-.col-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-.col-items::-webkit-scrollbar{width:3px;}
-.col-items::-webkit-scrollbar-thumb{background:var(--border2);}
-.col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.6rem;color:var(--dim);text-align:center;animation:pulse 1.5s infinite;}
-@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
-.item{display:block;text-decoration:none;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .12s;}
-.item:hover{background:rgba(232,160,32,.07);}
+.columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow:hidden;min-height:0;}
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:0;}
+.col.stream{flex:1;}
+.col.top-col{flex:1.5;}
+.col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
+.col-name{flex:1;color:var(--muted);}
+.top-col .col-name{color:var(--urgent);}
+.col-count{color:var(--faint);font-weight:400;background:var(--bg);padding:1px 7px;border-radius:9px;}
+.col-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
+.col-items::-webkit-scrollbar{width:5px;}
+.col-items::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
+.col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.58rem;color:var(--faint);text-align:center;}
+
+.item{display:block;text-decoration:none;position:relative;padding:8px 11px 8px 16px;border-bottom:1px solid var(--line);transition:background .12s;-webkit-user-select:text;user-select:text;}
+.item::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--barc,var(--faint));}
+.item:hover{background:var(--panel2);}
+.item-meta{font-family:var(--mono);font-size:0.54rem;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.item-src{font-weight:600;color:var(--srcc,var(--muted));}
+.item-time{color:var(--faint);}
+.item-title{font-size:0.78rem;line-height:1.34;color:var(--ink);font-weight:500;}
 .item:hover .item-title{color:var(--accent);}
-.item-title{font-size:0.78rem;line-height:1.45;color:var(--text);transition:color .12s;margin-bottom:4px;}
-.item-time{font-family:var(--mono);font-size:0.5rem;color:var(--dim);}
+.item.urgent::before{background:var(--urgent);}
+.item.urgent .item-title{color:var(--urgent);font-weight:700;}
+.item.urgent .item-src{color:var(--urgent);}
+.item:hover.urgent .item-title{color:var(--urgent);}
+
+.badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
+.top-col .item{padding-left:11px;}
+.top-col .item::before{display:none;}
+
+@media(max-width:760px){
+  .columns-wrap{flex-direction:column;overflow-y:auto;}
+  .col{flex:none;height:auto;}
+  .col-items{max-height:340px;}
+}
 </style>
 </head>
 <body>
@@ -73,200 +86,278 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
   <div class="sep"></div>
   <div id="clock">--:--:--</div>
   <div class="sep"></div>
-  <div class="live">● LIVE</div>
+  <div class="live">LIVE</div>
   <div class="header-right">
     <span id="load-status"></span>
-    <button class="btn" id="btn-refresh" onclick="refreshAll()" style="display:none">⟳ REFRESH</button>
-    <button class="btn btn-red" id="btn-logout" onclick="logout()" style="display:none">Logout</button>
+    <button class="btn" onclick="refreshAll()">⟳ REFRESH</button>
   </div>
 </header>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <h1>▸ NEWSDESK SPEEDBOAT INT</h1>
-  <div class="login-box">
-    <label>INOREADER E-MAIL</label>
-    <input type="email" id="inp-email" placeholder="ihre@email.de" autocomplete="email">
-    <label>PASSWORT</label>
-    <input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password">
-    <div id="login-error">Anmeldung fehlgeschlagen — bitte prüfen Sie Ihre Zugangsdaten.</div>
-    <button class="login-submit" onclick="doLogin()">ANMELDEN</button>
+<div class="ticker">
+  <div class="ticker-left">
+    <input type="text" id="search-box" placeholder="Search…" oninput="render()">
+    <span id="search-count"></span>
   </div>
-  <div class="login-note">Ihre Daten werden nur zur Authentifizierung bei Inoreader verwendet.</div>
+  <div class="ticker-lbl">LATEST</div>
+  <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Loading…</span></div>
 </div>
-
-<!-- DASHBOARD -->
-<div id="dashboard" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
-  <div class="ticker">
-    <div class="search-wrap">
-      <input type="text" id="search-box" placeholder="Search…" oninput="render()">
-      <span id="search-count"></span>
-    </div>
-    <div class="ticker-lbl">LATEST</div>
-    <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Loading…</span></div>
-  </div>
-  <div class="columns-wrap" id="columns"></div>
-</div>
+<div class="columns-wrap" id="columns"></div>
 
 <script>
-const CLIENT_ID  = '1000008397';
-const CLIENT_KEY = 'CTPkYtw_egWhJikQPxPC6slXSgcNQuAt';
-const API_BASE   = 'https://www.inoreader.com/reader/api/0';
-
 const FEEDS = [
-  {name:'BAHA',      url:'https://breakingthenews.net/news-feed.xml'},
-  {name:'FRANCE 24', url:'https://www.france24.com/en/rss'},
-  {name:'BNO',       url:'https://bnonews.com/index.php/feed/'},
-  {name:'ABC',       url:'https://feeds.abcnews.com/abcnews/topstories'},
-  {name:'NBC',       url:'https://feeds.nbcnews.com/nbcnews/public/news'},
-  {name:'CBS',       url:'https://www.cbsnews.com/latest/rss/main'},
-  {name:'AL JAZEERA',url:'https://www.aljazeera.com/xml/rss/all.xml'},
+  {name:'AL JAZEERA', url:'https://www.aljazeera.com/xml/rss/all.xml'},
+  {name:'BAHA',       url:'https://breakingthenews.net/news-feed.xml'},
+  {name:'FRANCE 24',  url:'https://www.france24.com/en/rss'},
+  {name:'RFI',        url:'https://www.rfi.fr/en/rss'},
+  {name:'NPR',        url:'https://feeds.npr.org/1001/rss.xml',
+                      alt:['https://feeds.npr.org/1004/rss.xml']},
+  {name:'DW',         url:'https://rss.dw.com/rdf/rss-en-all',
+                      alt:['https://rss.dw.com/rdf/rss-en-top']},
+  {name:'BBC',        url:'https://feeds.bbci.co.uk/news/rss.xml'},
+  {name:'ABC',        url:'https://feeds.abcnews.com/abcnews/topstories'},
+  {name:'GUARDIAN',   url:'https://feeds.guardian.co.uk/theguardian/world/rss'},
+  {name:'AA',         url:'https://www.aa.com.tr/en/rss/default?cat=live'},
+  {name:'SKY NEWS',   url:'https://feeds.skynews.com/feeds/rss/home.xml',
+                      merge:['https://feeds.skynews.com/feeds/rss/world.xml',
+                             'https://feeds.skynews.com/feeds/rss/uk.xml',
+                             'https://feeds.skynews.com/feeds/rss/us.xml',
+                             'https://feeds.skynews.com/feeds/rss/politics.xml',
+                             'https://feeds.skynews.com/feeds/rss/business.xml']},
+  {name:'BI US',      url:'https://feeds.businessinsider.com/custom/all',
+                      alt:['https://feeds.feedburner.com/businessinsider']},
 ];
 
+// Feste Balken-/Quellenfarbe je Quelle (für die Ticker-Ströme)
+const SRC = {
+  'BBC':'#5b9dff','DW':'#34d399','AL JAZEERA':'#e0a63c','FRANCE 24':'#a78bfa',
+  'GUARDIAN':'#22c3e6','SKY NEWS':'#f472b6','NPR':'#fb923c','AA':'#a3e635',
+  'BI US':'#2dd4bf','ABC':'#818cf8','RFI':'#fbbf24','BAHA':'#e879f9'
+};
+
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
-let authToken = sessionStorage.getItem('ino_auth_int') || null;
+
+// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigener Strom)
+const EXTRA_FEEDS = [
+  {name:'Google News',url:'https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en'},
+  {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
+  {name:'NYT',        url:'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml'},
+  {name:'Wash.Post',  url:'http://feeds.washingtonpost.com/rss/world'},
+  {name:'Al Arabiya', url:'https://english.alarabiya.net/feed/flipboard/en.xml'},
+  {name:'Politico',   url:'https://rss.politico.com/politics-news.xml'},
+  {name:'Politico EU',url:'https://www.politico.eu/feed/'},
+  {name:'NY Post',    url:'https://nypost.com/feed/'},
+];
+const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
 
-// Clock
 setInterval(()=>{
-  const n=new Date(),p=x=>String(x).padStart(2,'0');
+  const n=new Date(), p=x=>String(x).padStart(2,'0');
   document.getElementById('clock').textContent=
     `${p(n.getUTCHours())}:${p(n.getUTCMinutes())}:${p(n.getUTCSeconds())} UTC · `+
     n.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
 },1000);
 
-// Login
-document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin();
-});
-
-async function doLogin() {
-  const email = document.getElementById('inp-email').value.trim();
-  const pass  = document.getElementById('inp-pass').value;
-  const errEl = document.getElementById('login-error');
-  const btn   = document.querySelector('.login-submit');
-  if(!email||!pass) return;
-  btn.textContent='Anmelden…'; btn.disabled=true; errEl.style.display='none';
+function parseXML(xml) {
   try {
-    const res = await fetch('https://www.inoreader.com/accounts/ClientLogin',{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded','AppId':CLIENT_ID,'AppKey':CLIENT_KEY},
-      body:`Email=${encodeURIComponent(email)}&Passwd=${encodeURIComponent(pass)}`
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
+      const title = (el.querySelector('title')?.textContent || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
+      const pub   = (el.querySelector('pubDate,published,updated')?.textContent
+                     || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
+                     || '').trim();
+      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
     });
-    const text = await res.text();
-    if(!res.ok||!text.includes('Auth=')) throw new Error('failed');
-    const match = text.match(/Auth=(.+)/);
-    if(!match) throw new Error('no token');
-    authToken = match[1].trim();
-    sessionStorage.setItem('ino_auth_int', authToken);
-    initDashboard();
-  } catch(e) {
-    errEl.style.display='block';
-    btn.textContent='ANMELDEN'; btn.disabled=false;
+    return items.filter(i=>i.title.length>3);
+  } catch(e) { return []; }
+}
+
+async function fetchFeed(url) {
+  const strategies = [
+    async () => { const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(14000)}); if(!r.ok) return null; const j = await r.json(); return j && j.contents ? j.contents : null; },
+    async () => { const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(url, {signal:AbortSignal.timeout(10000)}); return r.ok ? await r.text() : null; },
+  ];
+  for (const strat of strategies) {
+    try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
   }
+  try {
+    const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
+        return j.items.slice(0,50).map(it=>({
+          title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
+          link:  it.link || '#',
+          pub:   it.pubDate || '',
+          date:  it.pubDate ? new Date(it.pubDate) : new Date(0)
+        })).filter(i=>i.title.length>3);
+      }
+    }
+  } catch(e) {}
+  return null;
 }
 
-function logout() {
-  sessionStorage.removeItem('ino_auth_int');
-  authToken=null; location.reload();
+const STOP = new Set(['about','after','again','could','would','should','their','there','these','those','which','while','where','being','first','still','three','under','since','other','against','among','because','before','during','could','people','minister','president',
+'einen','gegen','nicht','werden','haben','wegen','immer','schon','wieder','sollte','koennte','wurde','worden','diese','dieser','einem','einer','durch','zwischen','mehr','sein']);
+function sigWords(t){
+  return (t||'').toLowerCase()
+    .replace(/[^a-zäöüßàâçéèêëîïôûùüÿñæœ0-9\s]/g,' ')
+    .split(/\s+/).filter(w=>w.length>=5 && !STOP.has(w));
+}
+function topClusters(){
+  const all=[];
+  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name,words:sigWords(i.title)})); });
+  all.sort((a,b)=>b.date-a.date);
+  const clusters=[];
+  for(const it of all){
+    if(it.words.length<2) continue;
+    let best=null,bestShared=0;
+    for(const c of clusters){
+      let shared=0; for(const w of it.words) if(c.wordset.has(w)) shared++;
+      if(shared>bestShared){ bestShared=shared; best=c; }
+    }
+    if(best && bestShared>=2){
+      best.sources.add(it.src);
+      it.words.forEach(w=>best.wordset.add(w));
+    } else {
+      clusters.push({title:it.title,link:it.link,date:it.date,sources:new Set([it.src]),wordset:new Set(it.words)});
+    }
+  }
+  const now = Date.now();
+  const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
+  const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
+  return clusters.filter(c=>c.sources.size>=2 && ageH(c) <= 1).sort((a,b)=> hot(b)-hot(a));
+}
+function topColumnHTML(q){
+  let cl = topClusters();
+  if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q));
+  const body = cl.length ? cl.map(c=>{
+    const n=c.sources.size, full=[...c.sources].join(', ');
+    return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false">
+      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${timeAgo(c.date)}</span></div>
+      <div class="item-title">${esc(c.title)}</div></a>`;
+  }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
+  return `<div class="col top-col">
+    <div class="col-head"><span class="col-name">▲ TOP</span><span class="col-count">${cl.length||''}</span></div>
+    <div class="col-items">${body}</div>
+  </div>`;
 }
 
-// API fetch via Inoreader — no proxy needed!
-async function apiFetch(feedUrl) {
-  const streamId = `feed/${feedUrl}`;
-  const url = `${API_BASE}/stream/contents/${encodeURIComponent(streamId)}?n=30&output=json`;
-  const res = await fetch(url,{
-    headers:{
-      'Authorization':`GoogleLogin auth=${authToken}`,
-      'AppId':CLIENT_ID,
-      'AppKey':CLIENT_KEY,
-    },
-    signal:AbortSignal.timeout(12000)
-  });
-  if(res.status===401||res.status===403){logout();throw new Error('Session abgelaufen');}
-  if(!res.ok) throw new Error(res.status);
-  return res.json();
+// Ticker-Ströme: ALLE Hauptquellen gemischt, entdoppelt, neueste zuerst
+function streamList(q){
+  const all=[];
+  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name})); });
+  all.sort((a,b)=>b.date-a.date);
+  const seen=new Set(); let list=[];
+  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k); list.push(i); }
+  if(q) list = list.filter(i=>i.title.toLowerCase().includes(q));
+  return list;
 }
-
-function initDashboard() {
-  document.getElementById('login-screen').style.display='none';
-  const dash = document.getElementById('dashboard');
-  dash.style.display='flex';
-  document.getElementById('btn-refresh').style.display='';
-  document.getElementById('btn-logout').style.display='';
-  refreshAll();
+function streamItem(i){
+  const c = SRC[i.src] || 'var(--faint)';
+  return `<a class="item${isUrgent(i.title)?' urgent':''}" href="${i.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${c};--srcc:${c}">
+    <div class="item-meta"><span class="item-src">${esc(i.src)}</span><span class="item-time">${timeAgo(i.date)}</span></div>
+    <div class="item-title">${esc(i.title)}</div>
+  </a>`;
+}
+function streamColHTML(arr, loading){
+  const body = arr.length ? arr.map(streamItem).join('')
+    : (loading ? `<div class="col-msg">⟳ loading…</div>` : `<div class="col-msg">–</div>`);
+  return `<div class="col stream"><div class="col-head"></div><div class="col-items">${body}</div></div>`;
 }
 
 function render() {
-  const q = document.getElementById('search-box')?.value.toLowerCase().trim()||'';
-  let totalHits=0;
-  document.getElementById('columns').innerHTML = data.map(feed=>{
-    const items = q ? feed.items.filter(i=>i.title.toLowerCase().includes(q)) : feed.items;
-    if(q) totalHits+=items.length;
-    const st=feed.status;
-    const body=
-      st==='pending'||st==='loading' ? `<div class="col-msg">⟳ loading…</div>` :
-      st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Not available</div>` :
-      items.length ? items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener">
-        <div class="item-title">${esc(i.title)}</div>
-        <div class="item-time">${timeAgo(i.pub)}</div>
-      </a>`).join('') :
-      `<div class="col-msg" style="animation:none;">${q?'No results':'No articles'}</div>`;
-    return `<div class="col">
-      <div class="col-head"><span class="col-name">${esc(feed.name)}</span><span class="col-count">${st==='ok'?items.length:''}</span></div>
-      <div class="col-items">${body}</div>
-    </div>`;
-  }).join('');
-  const sc=document.getElementById('search-count');
-  if(sc) sc.textContent=q?`${totalHits} results`:'';
+  const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
+  const list = streamList(q);
+  const A=[],B=[]; list.forEach((m,idx)=> (idx%2 ? B : A).push(m));
+  const loading = data.every(f=>f.status==='pending'||f.status==='loading');
+  document.getElementById('columns').innerHTML =
+    topColumnHTML(q) + streamColHTML(A, loading) + streamColHTML(B, loading);
+  const sc = document.getElementById('search-count');
+  if(sc) sc.textContent = q ? `${list.length} results` : '';
 }
 
 async function loadFeed(feed) {
-  feed.status='loading'; render();
+  feed.status = 'loading'; render();
   try {
-    const json = await apiFetch(feed.url);
-    const items = (json.items||[]).map(i=>({
-      title: clean(i.title||''),
-      link:  i.canonical?.[0]?.href||i.alternate?.[0]?.href||'#',
-      pub:   i.published ? new Date(i.published*1000).toISOString() : '',
-    })).filter(i=>i.title.length>3);
-    items.sort((a,b)=>new Date(b.pub)-new Date(a.pub));
-    feed.items=items;
-    feed.status=items.length?'ok':'fail';
-  } catch(e){
-    feed.status='fail';
+    let items = await fetchFeed(feed.url);
+    if ((!items || !items.length) && feed.alt) {
+      for (const u of feed.alt) { items = await fetchFeed(u); if (items && items.length) break; }
+    }
+    if (feed.merge && feed.merge.length) {
+      for (const u of feed.merge) {
+        try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
+      }
+    }
+    if (!items || items.length === 0) throw new Error('no items');
+    const seen = new Set();
+    items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
+    items.sort((a, b) => b.date - a.date);
+    feed.items  = items.slice(0,60);
+    feed.status = 'ok';
+  } catch(e) {
+    feed.status = 'fail';
   }
   loadedCount++;
-  const ok=data.filter(f=>f.status==='ok').length;
-  document.getElementById('load-status').textContent=
-    loadedCount<data.length?`${loadedCount}/${data.length}…`:`✓ ${ok} of ${data.length} active`;
-  const latest=data.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
-  if(latest.length) document.getElementById('ticker-txt').textContent=latest.join('   //   ');
+  const ok = data.filter(f=>f.status==='ok').length;
+  document.getElementById('load-status').textContent =
+    loadedCount < data.length ? `${loadedCount}/${data.length}…` : `✓ ${ok} of ${data.length} active`;
+  const latest = data.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
+  if (latest.length) document.getElementById('ticker-txt').textContent = latest.join('   //   ');
+  render();
+}
+
+async function runPool(items, limit, worker){
+  let i = 0;
+  const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
+}
+
+async function loadExtra(feed){
+  try{
+    let items = await fetchFeed(feed.url);
+    if((!items||!items.length) && feed.alt){ for(const u of feed.alt){ items=await fetchFeed(u); if(items&&items.length) break; } }
+    feed.items = (items&&items.length)? items.slice(0,60) : [];
+  }catch(e){ feed.items=[]; }
+  feed.status = feed.items.length ? 'ok' : 'fail';
   render();
 }
 
 async function refreshAll() {
-  loadedCount=0;
+  loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
-  document.getElementById('load-status').textContent='Loading…';
+  extra.forEach(f=>{f.items=[];f.status='pending';});
+  document.getElementById('load-status').textContent = 'loading…';
   render();
-  await Promise.allSettled(data.map(loadFeed));
+  await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
 }
 
-function timeAgo(d){
-  if(!d) return '';
-  const m=Math.floor((Date.now()-new Date(d))/60000);
+document.getElementById('columns').addEventListener('click', e=>{
+  const a = e.target.closest('a.item');
+  if(!a) return;
+  const sel = window.getSelection();
+  if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
+});
+
+refreshAll();
+setInterval(refreshAll, 120000);
+
+function timeAgo(d) {
+  if(!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+  const m = Math.floor((Date.now() - d.getTime())/60000);
   if(isNaN(m)||m<0) return '';
-  if(m<2) return 'just now';
-  if(m<60) return `${m} min`;
-  if(m<1440) return `${Math.floor(m/60)} hrs`;
+  if(m<2)    return 'now';
+  if(m<60)   return `${m} min`;
+  if(m<1440) return `${Math.floor(m/60)} hr`;
   return `${Math.floor(m/1440)}d`;
 }
-function clean(s){return(s||'').replace(/<!\[CDATA\[|\]\]>/g,'').replace(/<[^>]+>/g,'').trim();}
+const URGENT = /(\bbreaking\b|\bjust in\b|\burgent\b|\bexclusive\b|\bexclusif\b|\balert\b|\balerte\b|\bderni[eè]re minute\b|\bflash\b)/i;
+function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-if(authToken) initDashboard();
-setInterval(()=>{if(authToken) refreshAll();}, 180000);
 </script>
 </body>
 </html>
