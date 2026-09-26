@@ -4,54 +4,79 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NewsDesk Speedboat INT</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0c0f;--bg2:#0f1318;--panel:#111518;--border:#1c2530;--border2:#243040;--accent:#e8a020;--red:#e04455;--text:#ccd8e0;--text2:#7a9aaa;--dim:#354555;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+:root{
+  color-scheme:dark;
+  --bg:#0d1117;--panel:#151b23;--panel2:#1b232d;
+  --ink:#e7eef6;--muted:#93a3b2;--faint:#5f6d7a;
+  --line:#222c37;--line2:#2c3742;
+  --accent:#4a9eff;--urgent:#ff5666;--tick:#7cc0ff;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);}
-body{display:flex;flex-direction:column;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;flex-direction:column;overflow:hidden;}
 
-header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-shrink:0;background:var(--bg2);border-bottom:2px solid var(--accent);}
-.logo{font-family:var(--mono);font-weight:600;font-size:0.75rem;letter-spacing:0.28em;color:var(--accent);}
-.sep{width:1px;height:18px;background:var(--border2);}
-#clock{font-family:var(--mono);font-size:0.75rem;color:var(--accent);}
-.live{font-family:var(--mono);font-size:0.58rem;color:var(--red);letter-spacing:0.2em;animation:blink 2s infinite;}
+header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--line2);}
+.logo{font-family:var(--mono);font-weight:600;font-size:0.72rem;letter-spacing:0.22em;color:var(--accent);}
+.sep{width:1px;height:16px;background:var(--line2);}
+#clock{font-family:var(--mono);font-size:0.72rem;color:var(--muted);font-variant-numeric:tabular-nums;}
+.live{font-family:var(--mono);font-size:0.56rem;color:var(--urgent);letter-spacing:0.18em;display:flex;align-items:center;gap:5px;}
+.live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--urgent);animation:blink 2s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 .header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-#load-status{font-family:var(--mono);font-size:0.6rem;color:var(--accent);}
-.btn{font-family:var(--mono);font-size:0.58rem;padding:3px 10px;background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;border-radius:2px;transition:all .2s;}
+#load-status{font-family:var(--mono);font-size:0.6rem;color:var(--muted);}
+.btn{font-family:var(--mono);font-size:0.58rem;padding:4px 11px;background:var(--panel2);border:1px solid var(--line2);color:var(--muted);cursor:pointer;border-radius:5px;transition:all .15s;}
 .btn:hover{border-color:var(--accent);color:var(--accent);}
 
-.columns-wrap{flex:1;display:flex;gap:1px;background:var(--border);overflow:hidden;min-height:0;}
-
-.col{flex:1;display:flex;flex-direction:column;background:var(--panel);overflow:hidden;}
-.col-head{padding:7px 10px;background:var(--bg2);border-bottom:1px solid var(--border);border-top:2px solid var(--accent);font-family:var(--mono);font-size:0.62rem;font-weight:600;letter-spacing:0.16em;flex-shrink:0;display:flex;align-items:center;}
-.col-name{flex:1;color:var(--accent);}
-.col-count{color:var(--dim);font-weight:400;}
-.col-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-.col-items::-webkit-scrollbar{width:3px;}
-.col-items::-webkit-scrollbar-thumb{background:var(--border2);}
-.col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.6rem;color:var(--dim);text-align:center;animation:pulse 1.5s infinite;}
-@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
-
-.item{display:block;text-decoration:none;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .12s;-webkit-user-select:text;user-select:text;}
-.item:hover{background:rgba(232,160,32,.07);}
-.item:hover .item-title{color:var(--accent);}
-.item-title{font-size:0.8rem;line-height:1.48;color:var(--text);transition:color .12s;margin-bottom:4px;}
-.item-title.urgent{color:var(--red);font-weight:600;}
-.item:hover .item-title.urgent{color:var(--red);}
-.item-time{font-family:var(--mono);font-size:0.5rem;color:var(--accent);}
-.col.top-col{flex:1;}
-.top-col .col-name{color:var(--red);}
-.item-src{font-family:var(--mono);font-size:0.52rem;color:var(--text2);margin-bottom:3px;white-space:normal;line-height:1.3;}
-.badge{display:inline-block;background:var(--red);color:#fff;font-weight:600;padding:0 5px;border-radius:8px;font-size:0.56rem;margin-right:5px;}
-
-.ticker{display:flex;align-items:center;height:22px;background:var(--bg2);border-top:1px solid var(--border2);overflow:hidden;flex-shrink:0;}
-.ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:var(--bg);background:var(--accent);padding:0 10px;height:100%;display:flex;align-items:center;letter-spacing:0.18em;flex-shrink:0;}
+.ticker{display:flex;align-items:center;height:26px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;}
+.ticker-left{display:flex;align-items:center;gap:7px;padding:0 12px;flex-shrink:0;}
+#search-box{font-family:var(--mono);font-size:0.6rem;padding:3px 9px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:5px;width:170px;outline:none;}
+#search-box:focus{border-color:var(--accent);}
+#search-count{font-family:var(--mono);font-size:0.52rem;color:var(--faint);white-space:nowrap;}
+.ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:#fff;background:var(--accent);padding:0 11px;height:100%;display:flex;align-items:center;letter-spacing:0.16em;}
 .ticker-track{flex:1;overflow:hidden;}
-.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.75rem;color:var(--accent);animation:scroll 80s linear infinite;}
+.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.7rem;color:var(--tick);animation:scroll 80s linear infinite;padding-left:100%;}
 .ticker-txt:hover{animation-play-state:paused;}
-@keyframes scroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+
+.columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow:hidden;min-height:0;}
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:0;}
+.col.stream{flex:1;}
+.col.top-col{flex:1;}
+.col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
+.col-name{flex:1;color:var(--muted);}
+.top-col .col-name{color:var(--urgent);}
+.col-count{color:var(--faint);font-weight:400;background:var(--bg);padding:1px 7px;border-radius:9px;}
+.col-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
+.col-items::-webkit-scrollbar{width:5px;}
+.col-items::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
+.col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.58rem;color:var(--faint);text-align:center;}
+
+.item{display:block;text-decoration:none;position:relative;padding:8px 11px 8px 16px;border-bottom:1px solid var(--line);transition:background .12s;-webkit-user-select:text;user-select:text;}
+.item::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--barc,var(--faint));}
+.item:hover{background:var(--panel2);}
+.item-meta{font-family:var(--mono);font-size:0.54rem;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.item-src{font-weight:600;color:var(--srcc,var(--muted));}
+.item-time{color:var(--faint);}
+.item-title{font-size:0.78rem;line-height:1.34;color:var(--ink);font-weight:500;}
+.item:hover .item-title{color:var(--accent);}
+.item.urgent::before{background:var(--urgent);}
+.item.urgent .item-title{color:var(--urgent);font-weight:700;}
+.item.urgent .item-src{color:var(--urgent);}
+.item:hover.urgent .item-title{color:var(--urgent);}
+
+.badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
+.top-col .item{padding-left:11px;}
+.top-col .item::before{display:none;}
+
+@media(max-width:760px){
+  .columns-wrap{flex-direction:column;overflow-y:auto;}
+  .col{flex:none;height:auto;}
+  .col-items{max-height:340px;}
+}
 </style>
 </head>
 <body>
@@ -61,7 +86,7 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
   <div class="sep"></div>
   <div id="clock">--:--:--</div>
   <div class="sep"></div>
-  <div class="live">● LIVE</div>
+  <div class="live">LIVE</div>
   <div class="header-right">
     <span id="load-status"></span>
     <button class="btn" onclick="refreshAll()">⟳ REFRESH</button>
@@ -69,10 +94,9 @@ header{display:flex;align-items:center;gap:14px;padding:0 16px;height:40px;flex-
 </header>
 
 <div class="ticker">
-  <div style="display:flex;align-items:center;gap:6px;padding:0 10px;flex-shrink:0;">
-    <input type="text" id="search-box" placeholder="Search…" oninput="render()"
-      style="font-family:var(--mono);font-size:0.58rem;padding:1px 7px;background:var(--panel);border:1px solid var(--border2);color:var(--text);border-radius:2px;width:160px;outline:none;height:16px;">
-    <span id="search-count" style="font-family:var(--mono);font-size:0.52rem;color:var(--dim);white-space:nowrap;"></span>
+  <div class="ticker-left">
+    <input type="text" id="search-box" placeholder="Search…" oninput="render()">
+    <span id="search-count"></span>
   </div>
   <div class="ticker-lbl">LATEST</div>
   <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Loading…</span></div>
@@ -103,9 +127,16 @@ const FEEDS = [
                       alt:['https://feeds.feedburner.com/businessinsider']},
 ];
 
+// Feste Balken-/Quellenfarbe je Quelle (für die Ticker-Ströme)
+const SRC = {
+  'BBC':'#5b9dff','DW':'#34d399','AL JAZEERA':'#e0a63c','FRANCE 24':'#a78bfa',
+  'GUARDIAN':'#22c3e6','SKY NEWS':'#f472b6','NPR':'#fb923c','AA':'#a3e635',
+  'BI US':'#2dd4bf','ABC':'#818cf8','RFI':'#fbbf24','BAHA':'#e879f9'
+};
+
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
-// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigenes Panel)
+// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigener Strom)
 const EXTRA_FEEDS = [
   {name:'Google News',url:'https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en'},
   {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
@@ -153,7 +184,6 @@ async function fetchFeed(url) {
   for (const strat of strategies) {
     try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
   }
-  // rss2json – holt den Feed serverseitig (greift oft, wo Proxys geblockt werden)
   try {
     const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
     if (r.ok) {
@@ -171,7 +201,6 @@ async function fetchFeed(url) {
   return null;
 }
 
-// Clustering: gleiche Story über mehrere Quellen erkennen und als "TOP"-Spalte bündeln
 const STOP = new Set(['about','after','again','could','would','should','their','there','these','those','which','while','where','being','first','still','three','under','since','other','against','among','because','before','during','could','people','minister','president',
 'einen','gegen','nicht','werden','haben','wegen','immer','schon','wieder','sollte','koennte','wurde','worden','diese','dieser','einem','einer','durch','zwischen','mehr','sein']);
 function sigWords(t){
@@ -198,8 +227,6 @@ function topClusters(){
       clusters.push({title:it.title,link:it.link,date:it.date,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
-  // "Hotness": viele Quellen zählen, aber Frische stark – nur Storys der letzten Stunde;
-  // wird 1 Std. lang nichts Neues gemeldet, fällt das Thema ganz raus.
   const now = Date.now();
   const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
   const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
@@ -210,59 +237,73 @@ function topColumnHTML(q){
   if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q));
   const body = cl.length ? cl.map(c=>{
     const n=c.sources.size, full=[...c.sources].join(', ');
-    return `<a class="item" href="${c.link}" target="_blank" rel="noopener" draggable="false">
-      <div class="item-src"><span class="badge" title="${esc(full)}">×${n}</span></div>
-      <div class="item-title${isUrgent(c.title)?' urgent':''}">${esc(c.title)}</div>
-      <div class="item-time">${timeAgo(c.date)}</div></a>`;
-  }).join('') : `<div class="col-msg" style="animation:none;color:var(--dim);">Noch keine Mehrfach-Meldung</div>`;
+    return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false">
+      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${timeAgo(c.date)}</span></div>
+      <div class="item-title">${esc(c.title)}</div></a>`;
+  }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
   return `<div class="col top-col">
     <div class="col-head"><span class="col-name">▲ TOP</span><span class="col-count">${cl.length||''}</span></div>
     <div class="col-items">${body}</div>
   </div>`;
 }
 
+// Ticker-Ströme: quellen-ausgewogen mischen (keine Quelle flutet) – erst die
+// neueste Meldung JEDER Quelle, dann die zweitneueste jeder Quelle usw.
+function streamList(q){
+  const all=[];
+  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name})); });
+  all.sort((a,b)=>b.date-a.date);
+  const seen=new Set(), bySrc=new Map();
+  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k);
+    if(!bySrc.has(i.src)) bySrc.set(i.src,[]); bySrc.get(i.src).push(i); }
+  const queues=[...bySrc.values()];
+  let list=[], round=0, more=true;
+  while(more){
+    more=false; const r=[];
+    for(const que of queues){ if(que[round]){ r.push(que[round]); more=true; } }
+    r.sort((a,b)=>b.date-a.date);
+    list=list.concat(r); round++;
+  }
+  if(q) list = list.filter(i=>i.title.toLowerCase().includes(q));
+  return list;
+}
+function streamItem(i){
+  const c = SRC[i.src] || 'var(--faint)';
+  return `<a class="item${isUrgent(i.title)?' urgent':''}" href="${i.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${c};--srcc:${c}">
+    <div class="item-meta"><span class="item-src">${esc(i.src)}</span><span class="item-time">${timeAgo(i.date)}</span></div>
+    <div class="item-title">${esc(i.title)}</div>
+  </a>`;
+}
+function streamColHTML(arr, loading){
+  const body = arr.length ? arr.map(streamItem).join('')
+    : (loading ? `<div class="col-msg">⟳ loading…</div>` : `<div class="col-msg">–</div>`);
+  return `<div class="col stream"><div class="col-head"></div><div class="col-items">${body}</div></div>`;
+}
+
 function render() {
   const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
-  let totalHits = 0;
-  document.getElementById('columns').innerHTML = topColumnHTML(q) + data.map(feed=>{
-    const items = q ? feed.items.filter(i=>i.title.toLowerCase().includes(q)) : feed.items;
-    if(q) totalHits += items.length;
-    const st = feed.status;
-    const body =
-      st==='pending'||st==='loading' ? `<div class="col-msg">⟳ loading…</div>` :
-      st==='fail' ? `<div class="col-msg" style="animation:none;color:#503030;">Not available</div>` :
-      items.map(i=>`<a class="item" href="${i.link}" target="_blank" rel="noopener" draggable="false">
-        <div class="item-title${isUrgent(i.title)?' urgent':''}">${esc(i.title)}</div>
-        <div class="item-time">${timeAgo(i.date)}</div>
-      </a>`).join('');
-    return `<div class="col">
-      <div class="col-head"><span class="col-name">${esc(feed.name)}</span><span class="col-count">${st==='ok'?feed.items.length:''}</span></div>
-      <div class="col-items">${body}</div>
-    </div>`;
-  }).join('');
+  const list = streamList(q);
+  const cols=[[],[],[],[],[]]; list.forEach((m,idx)=> cols[idx%5].push(m));
+  const loading = data.every(f=>f.status==='pending'||f.status==='loading');
+  document.getElementById('columns').innerHTML =
+    topColumnHTML(q) + cols.map(c=>streamColHTML(c, loading)).join('');
   const sc = document.getElementById('search-count');
-  if(sc) sc.textContent = q ? `${totalHits} results` : '';
+  if(sc) sc.textContent = q ? `${list.length} results` : '';
 }
 
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
     let items = await fetchFeed(feed.url);
-    // Ersatz-Adressen probieren, falls die Haupt-URL nichts liefert
     if ((!items || !items.length) && feed.alt) {
-      for (const u of feed.alt) {
-        items = await fetchFeed(u);
-        if (items && items.length) break;
-      }
+      for (const u of feed.alt) { items = await fetchFeed(u); if (items && items.length) break; }
     }
-    // Zusatz-Feeds derselben Quelle dazumischen (mehr Volumen)
     if (feed.merge && feed.merge.length) {
       for (const u of feed.merge) {
-        try { const extra = await fetchFeed(u); if (extra && extra.length) items = (items||[]).concat(extra); } catch(e) {}
+        try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
       }
     }
     if (!items || items.length === 0) throw new Error('no items');
-    // Dubletten anhand des Titels entfernen
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
@@ -280,14 +321,12 @@ async function loadFeed(feed) {
   render();
 }
 
-// Drossel: immer nur wenige Feeds gleichzeitig, sonst drosseln die Gratis-Proxys alles weg
 async function runPool(items, limit, worker){
   let i = 0;
   const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
   await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
 }
 
-// Hintergrund-Quelle laden: nur Items sammeln (für TOP), keine eigene Spalte, kein Zähler
 async function loadExtra(feed){
   try{
     let items = await fetchFeed(feed.url);
@@ -307,7 +346,6 @@ async function refreshAll() {
   await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
 }
 
-// Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
 document.getElementById('columns').addEventListener('click', e=>{
   const a = e.target.closest('a.item');
   if(!a) return;
@@ -327,7 +365,6 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} hr`;
   return `${Math.floor(m/1440)}d`;
 }
-// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter (EN + FR) → ganze Schlagzeile rot
 const URGENT = /(\bbreaking\b|\bjust in\b|\burgent\b|\bexclusive\b|\bexclusif\b|\balert\b|\balerte\b|\bderni[eè]re minute\b|\bflash\b)/i;
 function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
