@@ -11,7 +11,7 @@
   --bg:#0d1117;--panel:#151b23;--panel2:#1b232d;
   --ink:#e7eef6;--muted:#93a3b2;--faint:#5f6d7a;
   --line:#222c37;--line2:#2c3742;
-  --accent:#4a9eff;--urgent:#ff5666;--tick:#7cc0ff;
+  --accent:#4a9eff;--urgent:#ff5666;--tick:#ffffff;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'IBM Plex Sans',system-ui,sans-serif;
 }
@@ -55,13 +55,13 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .col-items::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
 .col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.58rem;color:var(--faint);text-align:center;}
 
-.item{display:block;text-decoration:none;position:relative;padding:8px 11px 8px 16px;border-bottom:1px solid var(--line);transition:background .12s;-webkit-user-select:text;user-select:text;}
-.item::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--barc,var(--faint));}
+.item{display:block;text-decoration:none;position:relative;padding:6px 10px 6px 15px;border-bottom:1px solid var(--line);transition:background .12s;-webkit-user-select:text;user-select:text;}
+.item::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:3px;border-radius:2px;background:var(--barc,var(--faint));}
 .item:hover{background:var(--panel2);}
-.item-meta{font-family:var(--mono);font-size:0.54rem;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.item-meta{font-family:var(--mono);font-size:0.52rem;color:var(--muted);margin-bottom:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .item-src{font-weight:600;color:var(--srcc,var(--muted));}
 .item-time{color:var(--faint);}
-.item-title{font-size:0.78rem;line-height:1.34;color:var(--ink);font-weight:500;}
+.item-title{font-size:0.71rem;line-height:1.28;color:var(--ink);font-weight:500;}
 .item:hover .item-title{color:var(--accent);}
 .item.urgent::before{background:var(--urgent);}
 .item.urgent .item-title{color:var(--urgent);font-weight:700;}
@@ -69,8 +69,6 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .item:hover.urgent .item-title{color:var(--urgent);}
 
 .badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
-.top-col .item{padding-left:11px;}
-.top-col .item::before{display:none;}
 
 @media(max-width:760px){
   .columns-wrap{flex-direction:column;overflow-y:auto;}
@@ -216,7 +214,7 @@ function topClusters(){
       best.sources.add(it.src);
       it.words.forEach(w=>best.wordset.add(w));
     } else {
-      clusters.push({title:it.title,link:it.link,date:it.date,sources:new Set([it.src]),wordset:new Set(it.words)});
+      clusters.push({title:it.title,link:it.link,date:it.date,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
   const now = Date.now();
@@ -228,8 +226,8 @@ function topColumnHTML(q){
   let cl = topClusters();
   if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q));
   const body = cl.length ? cl.map(c=>{
-    const n=c.sources.size, full=[...c.sources].join(', ');
-    return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false">
+    const n=c.sources.size, full=[...c.sources].join(', '), bc=SRC[c.src]||'var(--faint)';
+    return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${bc}">
       <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${timeAgo(c.date)}</span></div>
       <div class="item-title">${esc(c.title)}</div></a>`;
   }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
