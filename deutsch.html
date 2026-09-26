@@ -11,7 +11,7 @@
   --bg:#0d1117;--panel:#151b23;--panel2:#1b232d;
   --ink:#e7eef6;--muted:#93a3b2;--faint:#5f6d7a;
   --line:#222c37;--line2:#2c3742;
-  --accent:#4a9eff;--urgent:#ff5666;
+  --accent:#4a9eff;--urgent:#ff5666;--tick:#7cc0ff;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'IBM Plex Sans',system-ui,sans-serif;
 }
@@ -38,14 +38,14 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 #search-count{font-family:var(--mono);font-size:0.52rem;color:var(--faint);white-space:nowrap;}
 .ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:#fff;background:var(--accent);padding:0 11px;height:100%;display:flex;align-items:center;letter-spacing:0.16em;}
 .ticker-track{flex:1;overflow:hidden;}
-.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.7rem;color:var(--muted);animation:scroll 80s linear infinite;padding-left:100%;}
+.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.7rem;color:var(--tick);animation:scroll 80s linear infinite;padding-left:100%;}
 .ticker-txt:hover{animation-play-state:paused;}
 @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
 .columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow:hidden;min-height:0;}
 .col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:0;}
 .col.stream{flex:1;}
-.col.top-col{flex:1.5;}
+.col.top-col{flex:1;}
 .col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
 .col-name{flex:1;color:var(--muted);}
 .top-col .col-name{color:var(--urgent);}
@@ -175,6 +175,7 @@ async function fetchFeed(url) {
   for (const strat of strategies) {
     try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
   }
+  // rss2json – holt den Feed serverseitig (greift oft, wo Proxys geblockt werden, z. B. t-online)
   try {
     const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
     if (r.ok) {
@@ -238,13 +239,23 @@ function topColumnHTML(q){
   </div>`;
 }
 
-// Ticker-Ströme: ALLE Hauptquellen gemischt, entdoppelt, neueste zuerst
+// Ticker-Ströme: quellen-ausgewogen mischen (keine Quelle flutet) – erst die
+// neueste Meldung JEDER Quelle, dann die zweitneueste jeder Quelle usw.
 function streamList(q){
   const all=[];
   data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name})); });
   all.sort((a,b)=>b.date-a.date);
-  const seen=new Set(); let list=[];
-  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k); list.push(i); }
+  const seen=new Set(), bySrc=new Map();
+  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k);
+    if(!bySrc.has(i.src)) bySrc.set(i.src,[]); bySrc.get(i.src).push(i); }
+  const queues=[...bySrc.values()];
+  let list=[], round=0, more=true;
+  while(more){
+    more=false; const r=[];
+    for(const que of queues){ if(que[round]){ r.push(que[round]); more=true; } }
+    r.sort((a,b)=>b.date-a.date);
+    list=list.concat(r); round++;
+  }
   if(q) list = list.filter(i=>i.title.toLowerCase().includes(q));
   return list;
 }
@@ -264,10 +275,10 @@ function streamColHTML(arr, loading){
 function render() {
   const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
   const list = streamList(q);
-  const A=[],B=[]; list.forEach((m,idx)=> (idx%2 ? B : A).push(m));
+  const cols=[[],[],[],[],[]]; list.forEach((m,idx)=> cols[idx%5].push(m));
   const loading = data.every(f=>f.status==='pending'||f.status==='loading');
   document.getElementById('columns').innerHTML =
-    topColumnHTML(q) + streamColHTML(A, loading) + streamColHTML(B, loading);
+    topColumnHTML(q) + cols.map(c=>streamColHTML(c, loading)).join('');
   const sc = document.getElementById('search-count');
   if(sc) sc.textContent = q ? `${list.length} Treffer` : '';
 }
@@ -276,12 +287,14 @@ async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
     let items = await fetchFeed(feed.url);
+    // Zusatz-Feeds derselben Quelle dazumischen (z. B. t-online Schlagzeilen + Nachrichten)
     if (feed.merge && feed.merge.length) {
       for (const u of feed.merge) {
         try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
       }
     }
     if (!items || items.length === 0) throw new Error('no items');
+    // Dubletten anhand des Titels entfernen
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
