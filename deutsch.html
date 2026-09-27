@@ -93,7 +93,7 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 
 <div class="ticker">
   <div class="ticker-left">
-    <input type="text" id="search-box" placeholder="Suche…" oninput="render()">
+    <input type="text" id="search-box" placeholder="Suche… (auch Quelle, z. B. DLF)" oninput="render()">
     <span id="search-count"></span>
   </div>
   <div class="ticker-lbl">AKTUELL</div>
@@ -237,7 +237,7 @@ function topClusters(){
 }
 function topColumnHTML(q){
   let cl = topClusters();
-  if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q));
+  if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q) || [...c.sources].some(s=>s.toLowerCase().includes(q)));
   const body = cl.length ? cl.map(c=>{
     const n=c.sources.size, full=[...c.sources].join(', '), bc=SRC[c.src]||'var(--faint)';
     return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${bc}">
@@ -258,7 +258,7 @@ function streamList(q){
   all.sort((a,b)=>b.date-a.date);
   const seen=new Set(); let list=[];
   for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k); list.push(i); }
-  if(q) list = list.filter(i=>i.title.toLowerCase().includes(q));
+  if(q) list = list.filter(i=>i.title.toLowerCase().includes(q) || (i.src||'').toLowerCase().includes(q));
   return list;
 }
 function streamItem(i){
@@ -362,6 +362,7 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} Std.`;
   return `${Math.floor(m/1440)}d`;
 }
+// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter → ganze Schlagzeile rot
 const URGENT = /(\bEilmeldung|\bEil\b|\bBreaking|\bExklusiv)/i;
 function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
