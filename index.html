@@ -158,13 +158,17 @@ setInterval(()=>{
 function parseXML(xml) {
   try {
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
+    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map((el, idx)=>{
       const title = (el.querySelector('title')?.textContent || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
       const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
       const pub   = (el.querySelector('pubDate,published,updated')?.textContent
                      || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
                      || '').trim();
-      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
+      const raw = pub ? new Date(pub) : null;
+      let date, est=false;
+      if(raw && !isNaN(raw.getTime())){ date = raw; }
+      else { date = new Date(Date.now() - idx*60000); est = true; } // kein/ungültiges Datum → nach Feed-Reihenfolge oben, ohne Zeitangabe
+      return {title, link, pub, date, est};
     });
     return items.filter(i=>i.title.length>3);
   } catch(e) { return []; }
@@ -182,17 +186,24 @@ async function fetchFeed(url) {
   for (const strat of strategies) {
     try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
   }
+  // rss2json – holt den Feed serverseitig (greift oft, wo Proxys geblockt werden)
   try {
     const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
     if (r.ok) {
       const j = await r.json();
       if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
-        return j.items.slice(0,50).map(it=>({
-          title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
-          link:  it.link || '#',
-          pub:   it.pubDate || '',
-          date:  it.pubDate ? new Date(it.pubDate) : new Date(0)
-        })).filter(i=>i.title.length>3);
+        return j.items.slice(0,50).map((it, idx)=>{
+          const raw = it.pubDate ? new Date(it.pubDate) : null;
+          let date, est=false;
+          if(raw && !isNaN(raw.getTime())){ date = raw; }
+          else { date = new Date(Date.now() - idx*60000); est = true; }
+          return {
+            title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
+            link:  it.link || '#',
+            pub:   it.pubDate || '',
+            date, est
+          };
+        }).filter(i=>i.title.length>3);
       }
     }
   } catch(e) {}
@@ -208,7 +219,7 @@ function sigWords(t){
 }
 function topClusters(){
   const all=[];
-  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name,words:sigWords(i.title)})); });
+  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name,words:sigWords(i.title)})); });
   all.sort((a,b)=>b.date-a.date);
   const clusters=[];
   for(const it of all){
@@ -222,7 +233,7 @@ function topClusters(){
       best.sources.add(it.src);
       it.words.forEach(w=>best.wordset.add(w));
     } else {
-      clusters.push({title:it.title,link:it.link,date:it.date,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
+      clusters.push({title:it.title,link:it.link,date:it.date,est:it.est,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
   const now = Date.now();
@@ -236,7 +247,7 @@ function topColumnHTML(q){
   const body = cl.length ? cl.map(c=>{
     const n=c.sources.size, full=[...c.sources].join(', '), bc=SRC[c.src]||'var(--faint)';
     return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${bc}">
-      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${timeAgo(c.date)}</span></div>
+      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${c.est ? '' : timeAgo(c.date)}</span></div>
       <div class="item-title">${esc(c.title)}</div></a>`;
   }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
   return `<div class="col top-col">
@@ -249,7 +260,7 @@ function topColumnHTML(q){
 // entdoppelt. Aufgeteilt wird spaltenweise: Strom 1 = neueste, Strom 5 = älteste.
 function streamList(q){
   const all=[];
-  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name})); });
+  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name})); });
   all.sort((a,b)=>b.date-a.date);
   const seen=new Set(); let list=[];
   for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k); list.push(i); }
@@ -259,14 +270,14 @@ function streamList(q){
 function streamItem(i){
   const c = SRC[i.src] || 'var(--faint)';
   return `<a class="item${isUrgent(i.title)?' urgent':''}" href="${i.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${c};--srcc:${c}">
-    <div class="item-meta"><span class="item-src">${esc(i.src)}</span><span class="item-time">${timeAgo(i.date)}</span></div>
+    <div class="item-meta"><span class="item-src">${esc(i.src)}</span><span class="item-time">${i.est ? '' : timeAgo(i.date)}</span></div>
     <div class="item-title">${esc(i.title)}</div>
   </a>`;
 }
 function streamColHTML(arr, loading){
   const body = arr.length ? arr.map(streamItem).join('')
     : (loading ? `<div class="col-msg">⟳ loading…</div>` : `<div class="col-msg">–</div>`);
-  return `<div class="col stream"><div class="col-head"></div><div class="col-items">${body}</div></div>`;
+  return `<div class="col stream"><div class="col-items">${body}</div></div>`;
 }
 
 function render() {
