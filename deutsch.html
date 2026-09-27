@@ -149,13 +149,17 @@ setInterval(()=>{
 function parseXML(xml) {
   try {
     const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map(el=>{
+    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map((el, idx)=>{
       const title = (el.querySelector('title')?.textContent || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
       const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
       const pub   = (el.querySelector('pubDate,published,updated')?.textContent
                      || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
                      || '').trim();
-      return {title, link, pub, date: pub ? new Date(pub) : new Date(0)};
+      const raw = pub ? new Date(pub) : null;
+      let date, est=false;
+      if(raw && !isNaN(raw.getTime())){ date = raw; }
+      else { date = new Date(Date.now() - idx*60000); est = true; } // kein/ungültiges Datum (z. B. BILD) → nach Feed-Reihenfolge oben, ohne Zeitangabe
+      return {title, link, pub, date, est};
     });
     return items.filter(i=>i.title.length>3);
   } catch(e) { return []; }
@@ -179,18 +183,25 @@ async function fetchFeed(url) {
     if (r.ok) {
       const j = await r.json();
       if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
-        return j.items.slice(0,50).map(it=>({
-          title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
-          link:  it.link || '#',
-          pub:   it.pubDate || '',
-          date:  it.pubDate ? new Date(it.pubDate) : new Date(0)
-        })).filter(i=>i.title.length>3);
+        return j.items.slice(0,50).map((it, idx)=>{
+          const raw = it.pubDate ? new Date(it.pubDate) : null;
+          let date, est=false;
+          if(raw && !isNaN(raw.getTime())){ date = raw; }
+          else { date = new Date(Date.now() - idx*60000); est = true; }
+          return {
+            title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
+            link:  it.link || '#',
+            pub:   it.pubDate || '',
+            date, est
+          };
+        }).filter(i=>i.title.length>3);
       }
     }
   } catch(e) {}
   return null;
 }
 
+// Clustering: gleiche Story über mehrere Quellen erkennen und als "TOP"-Spalte bündeln
 const STOP = new Set(['about','after','again','could','would','should','their','there','these','those','which','while','where','being','first','still','three','under','since','other','against','among','because','before','during','people','minister','president',
 'einen','gegen','nicht','werden','haben','wegen','immer','schon','wieder','sollte','koennte','wurde','worden','diese','dieser','einem','einer','durch','zwischen','mehr','sein']);
 function sigWords(t){
@@ -200,7 +211,7 @@ function sigWords(t){
 }
 function topClusters(){
   const all=[];
-  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name,words:sigWords(i.title)})); });
+  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name,words:sigWords(i.title)})); });
   all.sort((a,b)=>b.date-a.date);
   const clusters=[];
   for(const it of all){
@@ -214,9 +225,11 @@ function topClusters(){
       best.sources.add(it.src);
       it.words.forEach(w=>best.wordset.add(w));
     } else {
-      clusters.push({title:it.title,link:it.link,date:it.date,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
+      clusters.push({title:it.title,link:it.link,date:it.date,est:it.est,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
+  // "Hotness": viele Quellen zählen, aber Frische stark – nur Storys der letzten Stunde;
+  // wird 1 Std. lang nichts Neues gemeldet, fällt das Thema ganz raus.
   const now = Date.now();
   const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
   const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
@@ -228,7 +241,7 @@ function topColumnHTML(q){
   const body = cl.length ? cl.map(c=>{
     const n=c.sources.size, full=[...c.sources].join(', '), bc=SRC[c.src]||'var(--faint)';
     return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${bc}">
-      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${timeAgo(c.date)}</span></div>
+      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${c.est ? '' : timeAgo(c.date)}</span></div>
       <div class="item-title">${esc(c.title)}</div></a>`;
   }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
   return `<div class="col top-col">
@@ -237,30 +250,21 @@ function topColumnHTML(q){
   </div>`;
 }
 
-// Ticker-Ströme: quellen-ausgewogen mischen (keine Quelle flutet) – erst die
-// neueste Meldung JEDER Quelle, dann die zweitneueste jeder Quelle usw.
+// Ticker-Ströme: alle Hauptquellen zusammen, streng nach Zeit (neueste zuerst),
+// entdoppelt. Aufgeteilt wird spaltenweise: Strom 1 = neueste, Strom 5 = älteste.
 function streamList(q){
   const all=[];
-  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,src:f.name})); });
+  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name})); });
   all.sort((a,b)=>b.date-a.date);
-  const seen=new Set(), bySrc=new Map();
-  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k);
-    if(!bySrc.has(i.src)) bySrc.set(i.src,[]); bySrc.get(i.src).push(i); }
-  const queues=[...bySrc.values()];
-  let list=[], round=0, more=true;
-  while(more){
-    more=false; const r=[];
-    for(const que of queues){ if(que[round]){ r.push(que[round]); more=true; } }
-    r.sort((a,b)=>b.date-a.date);
-    list=list.concat(r); round++;
-  }
+  const seen=new Set(); let list=[];
+  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k); list.push(i); }
   if(q) list = list.filter(i=>i.title.toLowerCase().includes(q));
   return list;
 }
 function streamItem(i){
   const c = SRC[i.src] || 'var(--faint)';
   return `<a class="item${isUrgent(i.title)?' urgent':''}" href="${i.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${c};--srcc:${c}">
-    <div class="item-meta"><span class="item-src">${esc(i.src)}</span><span class="item-time">${timeAgo(i.date)}</span></div>
+    <div class="item-meta"><span class="item-src">${esc(i.src)}</span><span class="item-time">${i.est ? '' : timeAgo(i.date)}</span></div>
     <div class="item-title">${esc(i.title)}</div>
   </a>`;
 }
@@ -273,7 +277,8 @@ function streamColHTML(arr, loading){
 function render() {
   const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
   const list = streamList(q);
-  const cols=[[],[],[],[],[]]; list.forEach((m,idx)=> cols[idx%5].push(m));
+  const N=5, per=Math.max(1, Math.ceil(list.length/N));
+  const cols=Array.from({length:N},(_,k)=>list.slice(k*per,(k+1)*per));
   const loading = data.every(f=>f.status==='pending'||f.status==='loading');
   document.getElementById('columns').innerHTML =
     topColumnHTML(q) + cols.map(c=>streamColHTML(c, loading)).join('');
@@ -310,12 +315,14 @@ async function loadFeed(feed) {
   render();
 }
 
+// Drossel: immer nur wenige Feeds gleichzeitig, sonst drosseln die Gratis-Proxys alles weg
 async function runPool(items, limit, worker){
   let i = 0;
   const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
   await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
 }
 
+// Hintergrund-Quelle laden: nur Items sammeln (für TOP), kein eigener Strom
 async function loadExtra(feed){
   try{
     let items = await fetchFeed(feed.url);
@@ -335,6 +342,7 @@ async function refreshAll() {
   await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
 }
 
+// Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
 document.getElementById('columns').addEventListener('click', e=>{
   const a = e.target.closest('a.item');
   if(!a) return;
@@ -354,6 +362,7 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} Std.`;
   return `${Math.floor(m/1440)}d`;
 }
+// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter → ganze Schlagzeile rot
 const URGENT = /(\bEilmeldung|\bEil\b|\bBreaking|\bExklusiv)/i;
 function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
