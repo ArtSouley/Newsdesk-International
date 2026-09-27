@@ -271,7 +271,7 @@ function streamItem(i){
 function streamColHTML(arr, loading){
   const body = arr.length ? arr.map(streamItem).join('')
     : (loading ? `<div class="col-msg">⟳ lädt…</div>` : `<div class="col-msg">–</div>`);
-  return `<div class="col stream"><div class="col-head"></div><div class="col-items">${body}</div></div>`;
+  return `<div class="col stream"><div class="col-items">${body}</div></div>`;
 }
 
 function render() {
@@ -362,7 +362,6 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} Std.`;
   return `${Math.floor(m/1440)}d`;
 }
-// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter → ganze Schlagzeile rot
 const URGENT = /(\bEilmeldung|\bEil\b|\bBreaking|\bExklusiv)/i;
 function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
