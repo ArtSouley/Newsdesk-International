@@ -123,18 +123,22 @@ const FEEDS = [
                              'https://feeds.skynews.com/feeds/rss/business.xml']},
   {name:'BI US',      url:'https://feeds.businessinsider.com/custom/all',
                       alt:['https://feeds.feedburner.com/businessinsider']},
+  {name:'Axios',      url:'https://api.axios.com/feed/'},
+  {name:'NY Post',    url:'https://nypost.com/feed/'},
+  {name:'NBC',        url:'https://feeds.nbcnews.com/nbcnews/public/news'},
 ];
 
 // Feste Balken-/Quellenfarbe je Quelle (für die Ticker-Ströme)
 const SRC = {
   'BBC':'#5b9dff','DW':'#34d399','AL JAZEERA':'#e0a63c','FRANCE 24':'#a78bfa',
   'GUARDIAN':'#22c3e6','SKY NEWS':'#f472b6','NPR':'#fb923c','AA':'#a3e635',
-  'BI US':'#2dd4bf','ABC':'#818cf8','RFI':'#fbbf24','BAHA':'#e879f9'
+  'BI US':'#2dd4bf','ABC':'#818cf8','RFI':'#fbbf24','BAHA':'#e879f9',
+  'Axios':'#38bdf8','NY Post':'#c084fc','NBC':'#facc15'
 };
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
-// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigener Strom)
+// Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigener Strom
 const EXTRA_FEEDS = [
   {name:'Google News',url:'https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en'},
   {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
@@ -144,6 +148,7 @@ const EXTRA_FEEDS = [
   {name:'Politico',   url:'https://rss.politico.com/politics-news.xml'},
   {name:'Politico EU',url:'https://www.politico.eu/feed/'},
   {name:'NY Post',    url:'https://nypost.com/feed/'},
+  {name:'NBC',        url:'https://feeds.nbcnews.com/nbcnews/public/news'},
 ];
 const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
@@ -236,6 +241,8 @@ function topClusters(){
       clusters.push({title:it.title,link:it.link,date:it.date,est:it.est,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
+  // "Hotness": viele Quellen zählen, aber Frische stark – nur Storys der letzten Stunde;
+  // wird 1 Std. lang nichts Neues gemeldet, fällt das Thema ganz raus.
   const now = Date.now();
   const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
   const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
@@ -296,15 +303,21 @@ async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
     let items = await fetchFeed(feed.url);
+    // Ersatz-Adressen probieren, falls die Haupt-URL nichts liefert
     if ((!items || !items.length) && feed.alt) {
-      for (const u of feed.alt) { items = await fetchFeed(u); if (items && items.length) break; }
+      for (const u of feed.alt) {
+        items = await fetchFeed(u);
+        if (items && items.length) break;
+      }
     }
+    // Zusatz-Feeds derselben Quelle dazumischen (mehr Volumen)
     if (feed.merge && feed.merge.length) {
       for (const u of feed.merge) {
         try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
       }
     }
     if (!items || items.length === 0) throw new Error('no items');
+    // Dubletten anhand des Titels entfernen
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
@@ -322,12 +335,14 @@ async function loadFeed(feed) {
   render();
 }
 
+// Drossel: immer nur wenige Feeds gleichzeitig, sonst drosseln die Gratis-Proxys alles weg
 async function runPool(items, limit, worker){
   let i = 0;
   const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
   await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
 }
 
+// Hintergrund-Quelle laden: nur Items sammeln (für TOP), kein eigener Strom
 async function loadExtra(feed){
   try{
     let items = await fetchFeed(feed.url);
@@ -347,6 +362,7 @@ async function refreshAll() {
   await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
 }
 
+// Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
 document.getElementById('columns').addEventListener('click', e=>{
   const a = e.target.closest('a.item');
   if(!a) return;
@@ -366,6 +382,7 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} hr`;
   return `${Math.floor(m/1440)}d`;
 }
+// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter (EN + FR) → ganze Schlagzeile rot
 const URGENT = /(\bbreaking\b|\bjust in\b|\burgent\b|\bexclusive\b|\bexclusif\b|\balert\b|\balerte\b|\bderni[eè]re minute\b|\bflash\b)/i;
 function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
