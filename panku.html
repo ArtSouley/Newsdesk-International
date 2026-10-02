@@ -27,7 +27,7 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--urgent);animation:blink 2s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 .header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-#load-status{font-family:var(--mono);font-size:0.6rem;color:var(--muted);}
+#load-status{font-family:var(--mono);font-size:0.6rem;color:var(--muted);white-space:nowrap;}
 .btn{font-family:var(--mono);font-size:0.58rem;padding:4px 11px;background:var(--panel2);border:1px solid var(--line2);color:var(--muted);cursor:pointer;border-radius:5px;transition:all .15s;}
 .btn:hover{border-color:var(--accent);color:var(--accent);}
 
@@ -312,10 +312,12 @@ async function loadFeed(feed) {
   }
   loadedCount++;
   const ok = data.filter(f=>f.status==='ok').length;
+  const failed = data.filter(f=>f.status==='fail').map(f=>f.name);
   document.getElementById('load-status').textContent =
-    loadedCount < data.length ? `${loadedCount}/${data.length}…` : `✓ ${ok} von ${data.length} aktiv`;
+    loadedCount < data.length ? `${loadedCount}/${data.length}…`
+      : `✓ ${ok} von ${data.length}` + (failed.length ? ` · fehlt: ${failed.join(', ')}` : ' aktiv');
   const latest = data.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
-  if (latest.length) document.getElementById('ticker-txt').textContent = latest.join('   //   ');
+  if (latest.length) { document.getElementById('ticker-txt').textContent = latest.join('   //   '); tuneTicker(); }
   render();
 }
 
@@ -353,6 +355,14 @@ document.getElementById('columns').addEventListener('click', e=>{
 
 refreshAll();
 setInterval(refreshAll, 120000);
+
+// Laufband-Tempo konstant halten (unabhängig von der Anzahl Quellen/Textlänge)
+function tuneTicker(){
+  const tt=document.getElementById('ticker-txt');
+  if(!tt) return;
+  const w = tt.scrollWidth || 1600;
+  tt.style.animationDuration = Math.max(60, Math.round(w/40)) + 's';
+}
 
 function timeAgo(d) {
   if(!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
