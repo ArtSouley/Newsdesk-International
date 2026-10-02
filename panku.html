@@ -124,7 +124,8 @@ const FEEDS = [
   {name:'Promiflash',         url:'https://feeds2.feedburner.com/promiflash'},
   {name:'Gala',               url:'https://www.gala.de/rss/gala_rss.html'},
   {name:'Stern',              url:'https://www.stern.de/feed/standard/lifestyle/'},
-  {name:'Rolling Stone DE',   url:'https://www.rollingstone.de/?widget=rssfeed&view=feed&contentId=57960'},
+  {name:'Rolling Stone DE',   url:'http://www.rollingstone.de/?widget=rssfeed&view=feed&contentId=57960',
+                              merge:['https://www.rollingstone.de/feed/']},
   {name:'DLF Kultur',         url:'https://www.deutschlandfunk.de/kultur.1495.de.rss'},
   {name:'T-ONLINE',           url:'https://www.t-online.de/unterhaltung/id_11526848/t-online-de-unterhaltung-rss-2-0.rss'},
   {name:'SPIEGEL',            url:'https://www.spiegel.de/schlagzeilen/rss/0,5291,22,00.xml'},
@@ -361,7 +362,7 @@ function tuneTicker(){
   const tt=document.getElementById('ticker-txt');
   if(!tt) return;
   const w = tt.scrollWidth || 1600;
-  tt.style.animationDuration = Math.max(60, Math.round(w/40)) + 's';
+  tt.style.animationDuration = Math.max(60, Math.round(w/100)) + 's';
 }
 
 function timeAgo(d) {
