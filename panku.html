@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NewsDesk Speedboat PAN/KU</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0d1117;--panel:#151b23;--panel2:#1b232d;
+  --ink:#e7eef6;--muted:#93a3b2;--faint:#5f6d7a;
+  --line:#222c37;--line2:#2c3742;
+  --accent:#4a9eff;--urgent:#ff5666;--tick:#ffffff;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;flex-direction:column;overflow:hidden;}
+
+header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--line2);}
+.logo{font-family:var(--mono);font-weight:600;font-size:0.72rem;letter-spacing:0.22em;color:var(--accent);}
+.sep{width:1px;height:16px;background:var(--line2);}
+#clock{font-family:var(--mono);font-size:0.72rem;color:var(--muted);font-variant-numeric:tabular-nums;}
+.live{font-family:var(--mono);font-size:0.56rem;color:var(--urgent);letter-spacing:0.18em;display:flex;align-items:center;gap:5px;}
+.live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--urgent);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+#load-status{font-family:var(--mono);font-size:0.6rem;color:var(--muted);}
+.btn{font-family:var(--mono);font-size:0.58rem;padding:4px 11px;background:var(--panel2);border:1px solid var(--line2);color:var(--muted);cursor:pointer;border-radius:5px;transition:all .15s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.ticker{display:flex;align-items:center;height:26px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0;}
+.ticker-left{display:flex;align-items:center;gap:7px;padding:0 12px;flex-shrink:0;}
+#search-box{font-family:var(--mono);font-size:0.6rem;padding:3px 9px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);border-radius:5px;width:200px;outline:none;}
+#search-box:focus{border-color:var(--accent);}
+#search-count{font-family:var(--mono);font-size:0.52rem;color:var(--faint);white-space:nowrap;}
+.ticker-lbl{font-family:var(--mono);font-size:0.52rem;font-weight:600;color:#fff;background:var(--accent);padding:0 11px;height:100%;display:flex;align-items:center;letter-spacing:0.16em;}
+.ticker-track{flex:1;overflow:hidden;}
+.ticker-txt{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:0.7rem;color:var(--tick);animation:scroll 80s linear infinite;padding-left:100%;}
+.ticker-txt:hover{animation-play-state:paused;}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+
+.columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow:hidden;min-height:0;}
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:0;}
+.col.stream{flex:1;}
+.col.top-col{flex:1;}
+.col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
+.col-name{flex:1;color:var(--muted);}
+.top-col .col-name{color:var(--urgent);}
+.col-count{color:var(--faint);font-weight:400;background:var(--bg);padding:1px 7px;border-radius:9px;}
+.col-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
+.col-items::-webkit-scrollbar{width:5px;}
+.col-items::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
+.col-msg{padding:16px 12px;font-family:var(--mono);font-size:0.58rem;color:var(--faint);text-align:center;}
+
+.item{display:block;text-decoration:none;position:relative;padding:6px 10px 6px 15px;border-bottom:1px solid var(--line);transition:background .12s;-webkit-user-select:text;user-select:text;}
+.item::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:3px;border-radius:2px;background:var(--barc,var(--faint));}
+.item:hover{background:var(--panel2);}
+.item-meta{font-family:var(--mono);font-size:0.52rem;color:var(--muted);margin-bottom:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.item-src{font-weight:600;color:var(--srcc,var(--muted));}
+.item-time{color:var(--faint);}
+.item-title{font-size:0.71rem;line-height:1.28;color:var(--ink);font-weight:500;}
+.item:hover .item-title{color:var(--accent);}
+.item.urgent::before{background:var(--urgent);}
+.item.urgent .item-title{color:var(--urgent);font-weight:700;}
+.item.urgent .item-src{color:var(--urgent);}
+.item:hover.urgent .item-title{color:var(--urgent);}
+
+.badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
+
+@media(max-width:760px){
+  .columns-wrap{flex-direction:column;overflow-y:auto;}
+  .col{flex:none;height:auto;}
+  .col-items{max-height:340px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">▸ NEWSDESK SPEEDBOAT PAN/KU</div>
+  <div class="sep"></div>
+  <div id="clock">--:--:--</div>
+  <div class="sep"></div>
+  <div class="live">LIVE</div>
+  <div class="header-right">
+    <span id="load-status"></span>
+    <button class="btn" onclick="refreshAll()">⟳ REFRESH</button>
+  </div>
+</header>
+
+<div class="ticker">
+  <div class="ticker-left">
+    <input type="text" id="search-box" placeholder="Suche… (auch Quelle, z. B. TMZ)" oninput="render()">
+    <span id="search-count"></span>
+  </div>
+  <div class="ticker-lbl">AKTUELL</div>
+  <div class="ticker-track"><span class="ticker-txt" id="ticker-txt">Lädt…</span></div>
+</div>
+<div class="columns-wrap" id="columns"></div>
+
+<script>
+const FEEDS = [
+  // --- International ---
+  {name:'TMZ',                url:'https://www.tmz.com/rss.xml'},
+  {name:'People',             url:'https://people.com/feed/'},
+  {name:'Hollywood Reporter', url:'https://www.hollywoodreporter.com/feed/'},
+  {name:'Variety',            url:'https://variety.com/feed/'},
+  {name:'ABC',                url:'https://feeds.abcnews.com/abcnews/entertainmentheadlines'},
+  {name:'E! News',            url:'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml'},
+  {name:'Sky Ent',            url:'https://feeds.skynews.com/feeds/rss/entertainment.xml'},
+  {name:'UPI',                url:'https://rss.upi.com/news/entertainment_news.rss'},
+  {name:'EW',                 url:'https://ew.com/feed/'},
+  {name:'Fox News',           url:'https://moxie.foxnews.com/google-publisher/entertainment.xml'},
+  {name:'Hello!',             url:'https://www.hellomagazine.com/rss/'},
+  {name:'Page Six',           url:'https://pagesix.com/feed/'},
+  {name:'BBC',                url:'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml'},
+  {name:'Guardian',           url:'https://www.theguardian.com/culture/rss'},
+  {name:'Rolling Stone',      url:'https://www.rollingstone.com/feed/'},
+  // --- Deutsch ---
+  {name:'BILD',               url:'https://www.bild.de/rss-feeds/rss-16727550,feed=unterhaltung.bild.html'},
+  {name:'Promiflash',         url:'https://www.promiflash.de/rss/news.xml'},
+  {name:'Gala',               url:'https://www.gala.de/feed.rss'},
+  {name:'Bunte',              url:'https://www.bunte.de/feed'},
+  {name:'Rolling Stone DE',   url:'https://www.rollingstone.de/feed/'},
+  {name:'DLF Kultur',         url:'https://www.deutschlandfunkkultur.de/die-nachrichten-100.rss'},
+  {name:'T-ONLINE',           url:'https://www.t-online.de/unterhaltung/feed.rss'},
+  {name:'SPIEGEL',            url:'https://www.spiegel.de/kultur/index.rss',
+                              merge:['https://www.spiegel.de/panorama/leute/index.rss']},
+  {name:'NTV',                url:'https://www.n-tv.de/leute/rss'},
+];
+
+// Feste Balken-/Quellenfarbe je Quelle (für die Ticker-Ströme)
+const SRC = {
+  'TMZ':'#f472b6','People':'#38bdf8','Hollywood Reporter':'#fbbf24','Variety':'#a78bfa',
+  'ABC':'#5b9dff','E! News':'#e879f9','Sky Ent':'#22c3e6','UPI':'#a3e635','EW':'#fb923c',
+  'Fox News':'#2563eb','Hello!':'#fb7185','Page Six':'#c084fc','BBC':'#34d399','Guardian':'#2dd4bf',
+  'Rolling Stone':'#f97316','BILD':'#facc15','Promiflash':'#d946ef','Gala':'#818cf8','Bunte':'#fca5a5',
+  'Rolling Stone DE':'#e0a63c','DLF Kultur':'#86efac','T-ONLINE':'#14b8a6','SPIEGEL':'#93c5fd','NTV':'#65a30d'
+};
+
+const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
+
+// Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigener Strom
+const EXTRA_FEEDS = [
+  {name:'Google News', url:'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=de&gl=DE&ceid=DE:de'},
+];
+const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
+let loadedCount = 0;
+
+setInterval(()=>{
+  const n=new Date(), p=x=>String(x).padStart(2,'0');
+  document.getElementById('clock').textContent=
+    `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} MEZ · `+
+    n.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
+},1000);
+
+function parseXML(xml) {
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map((el, idx)=>{
+      const title = (el.querySelector('title')?.textContent || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
+      const pub   = (el.querySelector('pubDate,published,updated')?.textContent
+                     || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
+                     || '').trim();
+      const raw = pub ? new Date(pub) : null;
+      let date, est=false;
+      if(raw && !isNaN(raw.getTime())){ date = raw; }
+      else { date = new Date(Date.now() - idx*60000); est = true; } // kein/ungültiges Datum → nach Feed-Reihenfolge oben, ohne Zeitangabe
+      return {title, link, pub, date, est};
+    });
+    return items.filter(i=>i.title.length>3);
+  } catch(e) { return []; }
+}
+
+async function fetchFeed(url) {
+  const strategies = [
+    async () => { const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); if(!r.ok) return null; const j = await r.json(); return j && j.contents ? j.contents : null; },
+    async () => { const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(url, {signal:AbortSignal.timeout(10000)}); return r.ok ? await r.text() : null; },
+  ];
+  for (const strat of strategies) {
+    try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
+  }
+  // rss2json – holt den Feed serverseitig (greift oft, wo Proxys geblockt werden)
+  try {
+    const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
+        return j.items.slice(0,50).map((it, idx)=>{
+          const raw = it.pubDate ? new Date(it.pubDate) : null;
+          let date, est=false;
+          if(raw && !isNaN(raw.getTime())){ date = raw; }
+          else { date = new Date(Date.now() - idx*60000); est = true; }
+          return {
+            title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
+            link:  it.link || '#',
+            pub:   it.pubDate || '',
+            date, est
+          };
+        }).filter(i=>i.title.length>3);
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+// Clustering: gleiche Story über mehrere Quellen erkennen und als "TOP"-Spalte bündeln
+const STOP = new Set(['about','after','again','could','would','should','their','there','these','those','which','while','where','being','first','still','three','under','since','other','against','among','because','before','during','people','after','says','star','stars','actor','actress','movie','film','series','season','trailer','video','photos','watch','report','reveals','shares','breaks',
+'einen','gegen','nicht','werden','haben','wegen','immer','schon','wieder','sollte','koennte','wurde','worden','diese','dieser','einem','einer','durch','zwischen','mehr','sein']);
+function sigWords(t){
+  return (t||'').toLowerCase()
+    .replace(/[^a-zäöüßàâçéèêëîïôûùüÿñæœ0-9\s]/g,' ')
+    .split(/\s+/).filter(w=>w.length>=5 && !STOP.has(w));
+}
+function topClusters(){
+  const all=[];
+  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name,words:sigWords(i.title)})); });
+  all.sort((a,b)=>b.date-a.date);
+  const clusters=[];
+  for(const it of all){
+    if(it.words.length<2) continue;
+    let best=null,bestShared=0;
+    for(const c of clusters){
+      let shared=0; for(const w of it.words) if(c.wordset.has(w)) shared++;
+      if(shared>bestShared){ bestShared=shared; best=c; }
+    }
+    if(best && bestShared>=2){
+      best.sources.add(it.src);
+      it.words.forEach(w=>best.wordset.add(w));
+    } else {
+      clusters.push({title:it.title,link:it.link,date:it.date,est:it.est,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
+    }
+  }
+  const now = Date.now();
+  const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
+  const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
+  return clusters.filter(c=>c.sources.size>=2 && ageH(c) <= 1).sort((a,b)=> hot(b)-hot(a));
+}
+function topColumnHTML(q){
+  let cl = topClusters();
+  if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q) || [...c.sources].some(s=>s.toLowerCase().includes(q)));
+  const body = cl.length ? cl.map(c=>{
+    const n=c.sources.size, full=[...c.sources].join(', '), bc=SRC[c.src]||'var(--faint)';
+    return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${bc}">
+      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${c.est ? '' : timeAgo(c.date)}</span></div>
+      <div class="item-title">${esc(c.title)}</div></a>`;
+  }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
+  return `<div class="col top-col">
+    <div class="col-head"><span class="col-name">▲ TOP</span><span class="col-count">${cl.length||''}</span></div>
+    <div class="col-items">${body}</div>
+  </div>`;
+}
+
+function streamList(q){
+  const all=[];
+  data.forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name})); });
+  all.sort((a,b)=>b.date-a.date);
+  const seen=new Set(); let list=[];
+  for(const i of all){ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) continue; seen.add(k); list.push(i); }
+  if(q) list = list.filter(i=>i.title.toLowerCase().includes(q) || (i.src||'').toLowerCase().includes(q));
+  return list;
+}
+function streamItem(i){
+  const c = SRC[i.src] || 'var(--faint)';
+  return `<a class="item${isUrgent(i.title)?' urgent':''}" href="${i.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${c};--srcc:${c}">
+    <div class="item-meta"><span class="item-src">${esc(i.src)}</span><span class="item-time">${i.est ? '' : timeAgo(i.date)}</span></div>
+    <div class="item-title">${esc(i.title)}</div>
+  </a>`;
+}
+function streamColHTML(arr, loading){
+  const body = arr.length ? arr.map(streamItem).join('')
+    : (loading ? `<div class="col-msg">⟳ lädt…</div>` : `<div class="col-msg">–</div>`);
+  return `<div class="col stream"><div class="col-items">${body}</div></div>`;
+}
+
+function render() {
+  const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
+  const list = streamList(q);
+  const N=5, per=Math.max(1, Math.ceil(list.length/N));
+  const cols=Array.from({length:N},(_,k)=>list.slice(k*per,(k+1)*per));
+  const loading = data.every(f=>f.status==='pending'||f.status==='loading');
+  document.getElementById('columns').innerHTML =
+    topColumnHTML(q) + cols.map(c=>streamColHTML(c, loading)).join('');
+  const sc = document.getElementById('search-count');
+  if(sc) sc.textContent = q ? `${list.length} Treffer` : '';
+}
+
+async function loadFeed(feed) {
+  feed.status = 'loading'; render();
+  try {
+    let items = await fetchFeed(feed.url);
+    if (feed.merge && feed.merge.length) {
+      for (const u of feed.merge) {
+        try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
+      }
+    }
+    if (!items || items.length === 0) throw new Error('no items');
+    const seen = new Set();
+    items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
+    items.sort((a, b) => b.date - a.date);
+    feed.items  = items.slice(0,60);
+    feed.status = 'ok';
+  } catch(e) {
+    feed.status = 'fail';
+  }
+  loadedCount++;
+  const ok = data.filter(f=>f.status==='ok').length;
+  document.getElementById('load-status').textContent =
+    loadedCount < data.length ? `${loadedCount}/${data.length}…` : `✓ ${ok} von ${data.length} aktiv`;
+  const latest = data.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
+  if (latest.length) document.getElementById('ticker-txt').textContent = latest.join('   //   ');
+  render();
+}
+
+async function runPool(items, limit, worker){
+  let i = 0;
+  const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
+}
+
+async function loadExtra(feed){
+  try{
+    let items = await fetchFeed(feed.url);
+    if((!items||!items.length) && feed.alt){ for(const u of feed.alt){ items=await fetchFeed(u); if(items&&items.length) break; } }
+    feed.items = (items&&items.length)? items.slice(0,60) : [];
+  }catch(e){ feed.items=[]; }
+  feed.status = feed.items.length ? 'ok' : 'fail';
+  render();
+}
+
+async function refreshAll() {
+  loadedCount = 0;
+  data.forEach(f=>{f.items=[];f.status='pending';});
+  extra.forEach(f=>{f.items=[];f.status='pending';});
+  document.getElementById('load-status').textContent = 'lädt…';
+  render();
+  await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
+}
+
+document.getElementById('columns').addEventListener('click', e=>{
+  const a = e.target.closest('a.item');
+  if(!a) return;
+  const sel = window.getSelection();
+  if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
+});
+
+refreshAll();
+setInterval(refreshAll, 120000);
+
+function timeAgo(d) {
+  if(!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+  const m = Math.floor((Date.now() - d.getTime())/60000);
+  if(isNaN(m)||m<0) return '';
+  if(m<2)    return 'eben';
+  if(m<60)   return `${m} Min.`;
+  if(m<1440) return `${Math.floor(m/60)} Std.`;
+  return `${Math.floor(m/1440)}d`;
+}
+// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter (EN + DE) → ganze Schlagzeile rot
+const URGENT = /(\bbreaking\b|\bjust in\b|\burgent\b|\bexclusive\b|\balert\b|\bconfirmed\b|\bdies\b|\bdead\b|\bdeath\b|\bgestorben\b|\btot\b|\beil\b|\bexklusiv\b)/i;
+function isUrgent(t){ return URGENT.test(t||''); }
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
