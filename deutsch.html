@@ -118,12 +118,14 @@ const FEEDS = [
                       merge:['https://www.rnd.de/arc/outboundfeeds/rss/category/wirtschaft/',
                              'https://www.rnd.de/arc/outboundfeeds/rss/category/panorama/']},
   // --- neu aufgenommen (02.10.2026) ---
-  {name:'FAZ',        url:'https://www.faz.net/rss/aktuell'},
-  {name:'SZ',         url:'https://www.sueddeutsche.de/news/rss'},
-  {name:'ZEIT',       url:'https://newsfeed.zeit.de/all'},
-  {name:'TAGESSCHAU', url:'https://www.tagesschau.de/xml/rss2'},
-  {name:'FOCUS',      url:'https://rss.focus.de/fol/XML/rss_folnews.xml'},
-  {name:'NZZ',        url:'https://www.nzz.ch/startseite.rss'},
+  {name:'FAZ',         url:'https://www.faz.net/rss/aktuell'},
+  {name:'SZ',          url:'https://rss.sueddeutsche.de/alles'},
+  {name:'ZEIT',        url:'https://newsfeed.zeit.de/all'},
+  {name:'TAGESSCHAU',  url:'https://www.tagesschau.de/xml/rss2'},
+  {name:'FOCUS',       url:'https://www.focus.de/rss'},
+  {name:'NZZ',         url:'https://www.nzz.ch/startseite.rss'},
+  {name:'TAGESSPIEGEL',url:'https://www.tagesspiegel.de/contentexport/feed/home'},
+  {name:'HANDELSBLATT',url:'https://www.handelsblatt.com/contentexport/feed/top-themen/'},
 ];
 
 // Feste Balken-/Quellenfarbe je Quelle (für die Ticker-Ströme)
@@ -132,17 +134,15 @@ const SRC = {
   'NTV':'#f472b6','DLF':'#a78bfa','EURONEWS':'#22c3e6','WELT':'#a3e635','BI DE':'#2dd4bf',
   'RND':'#818cf8',
   'FAZ':'#e8734a','SZ':'#38bdf8','ZEIT':'#cbd5e1','TAGESSCHAU':'#3b82f6','FOCUS':'#ef4444',
-  'NZZ':'#9ca3af'
+  'NZZ':'#9ca3af','TAGESSPIEGEL':'#e879f9','HANDELSBLATT':'#fdba74'
 };
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
-// Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigener Strom
-// FAZ, SZ, ZEIT, tagesschau sind jetzt sichtbare Ströme (oben in FEEDS) → hier entfernt, damit nichts doppelt lädt.
+// Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigener Strom.
+// Sichtbare Ströme (oben in FEEDS) zählen ohnehin für TOP mit – hier nur reine Zusatz-Zählbasis.
 const EXTRA_FEEDS = [
   {name:'Google News', url:'https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de'},
-  {name:'Tagesspiegel',url:'https://www.tagesspiegel.de/contentexport/feed/home'},
-  {name:'Handelsblatt',url:'https://www.handelsblatt.com/contentexport/feed/schlagzeilen'},
   {name:'RP Online',   url:'https://rp-online.de/feed.rss'},
 ];
 const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
