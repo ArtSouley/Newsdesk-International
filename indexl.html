@@ -104,14 +104,13 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 <script>
 const FEEDS = [
   {name:'AL JAZEERA', url:'https://www.aljazeera.com/xml/rss/all.xml'},
-  {name:'AL ARABIYA', url:'https://english.alarabiya.net/feed/rss2/en/News.xml'},
-  {name:'NPR', url:'https://feeds.npr.org/1001/rss.xml',
-             merge:['https://feeds.npr.org/1004/rss.xml']},
+  {name:'AL ARABIYA', url:'https://english.alarabiya.net/feed/rss2/en.xml',
+                      merge:['https://english.alarabiya.net/feed/rss2/en/News.xml']},
+  {name:'NPR',        url:'https://feeds.npr.org/1001/rss.xml',
+                      merge:['https://feeds.npr.org/1004/rss.xml']},
   {name:'BAHA',       url:'https://breakingthenews.net/news-feed.xml'},
   {name:'FRANCE 24',  url:'https://www.france24.com/en/rss'},
   {name:'RFI',        url:'https://www.rfi.fr/en/rss'},
-  {name:'NPR',        url:'https://feeds.npr.org/1001/rss.xml',
-                      alt:['https://feeds.npr.org/1004/rss.xml']},
   {name:'DW',         url:'https://rss.dw.com/rdf/rss-en-all',
                       alt:['https://rss.dw.com/rdf/rss-en-top']},
   {name:'BBC',        url:'https://feeds.bbci.co.uk/news/rss.xml'},
@@ -147,11 +146,8 @@ const EXTRA_FEEDS = [
   {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
   {name:'NYT',        url:'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml'},
   {name:'Wash.Post',  url:'http://feeds.washingtonpost.com/rss/world'},
-  {name:'Al Arabiya', url:'https://english.alarabiya.net/feed/flipboard/en.xml'},
   {name:'Politico',   url:'https://rss.politico.com/politics-news.xml'},
   {name:'Politico EU',url:'https://www.politico.eu/feed/'},
-  {name:'NY Post',    url:'https://nypost.com/feed/'},
-  {name:'NBC',        url:'https://feeds.nbcnews.com/nbcnews/public/news'},
 ];
 const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
