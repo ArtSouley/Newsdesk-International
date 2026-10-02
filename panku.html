@@ -105,14 +105,14 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 const FEEDS = [
   // --- International ---
   {name:'TMZ',                url:'https://www.tmz.com/rss.xml'},
-  {name:'People',             url:'https://people.com/feed/'},
+  {name:'People',             url:'https://feeds-api.dotdashmeredith.com/v1/rss/google/6bb3396f-8157-4dc5-8fcf-c1bd9d415be8'},
   {name:'Hollywood Reporter', url:'https://www.hollywoodreporter.com/feed/'},
   {name:'Variety',            url:'https://variety.com/feed/'},
   {name:'ABC',                url:'https://feeds.abcnews.com/abcnews/entertainmentheadlines'},
   {name:'E! News',            url:'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml'},
   {name:'Sky Ent',            url:'https://feeds.skynews.com/feeds/rss/entertainment.xml'},
   {name:'UPI',                url:'https://rss.upi.com/news/entertainment_news.rss'},
-  {name:'EW',                 url:'https://ew.com/feed/'},
+  {name:'EW',                 url:'https://feeds.distribution.dotdashmeredith.com/v3/rss/d004b68a-9907-4fc4-ae4a-7a3b733547cd'},
   {name:'Fox News',           url:'https://moxie.foxnews.com/google-publisher/entertainment.xml'},
   {name:'Hello!',             url:'https://www.hellomagazine.com/rss/'},
   {name:'Page Six',           url:'https://pagesix.com/feed/'},
@@ -120,15 +120,14 @@ const FEEDS = [
   {name:'Guardian',           url:'https://www.theguardian.com/culture/rss'},
   {name:'Rolling Stone',      url:'https://www.rollingstone.com/feed/'},
   // --- Deutsch ---
-  {name:'BILD',               url:'https://www.bild.de/rss-feeds/rss-16727550,feed=unterhaltung.bild.html'},
-  {name:'Promiflash',         url:'https://www.promiflash.de/rss/news.xml'},
-  {name:'Gala',               url:'https://www.gala.de/feed.rss'},
-  {name:'Bunte',              url:'https://www.bunte.de/feed'},
-  {name:'Rolling Stone DE',   url:'https://www.rollingstone.de/feed/'},
-  {name:'DLF Kultur',         url:'https://www.deutschlandfunkkultur.de/die-nachrichten-100.rss'},
-  {name:'T-ONLINE',           url:'https://www.t-online.de/unterhaltung/feed.rss'},
-  {name:'SPIEGEL',            url:'https://www.spiegel.de/kultur/index.rss',
-                              merge:['https://www.spiegel.de/panorama/leute/index.rss']},
+  {name:'BILD',               url:'https://www.bild.de/rss-feeds/rss-16725492,feed=unterhaltung.bild.html'},
+  {name:'Promiflash',         url:'https://feeds2.feedburner.com/promiflash'},
+  {name:'Gala',               url:'https://www.gala.de/rss/gala_rss.html'},
+  {name:'Stern',              url:'https://www.stern.de/feed/standard/lifestyle/'},
+  {name:'Rolling Stone DE',   url:'https://www.rollingstone.de/?widget=rssfeed&view=feed&contentId=57960'},
+  {name:'DLF Kultur',         url:'https://www.deutschlandfunk.de/kultur.1495.de.rss'},
+  {name:'T-ONLINE',           url:'https://www.t-online.de/unterhaltung/id_11526848/t-online-de-unterhaltung-rss-2-0.rss'},
+  {name:'SPIEGEL',            url:'https://www.spiegel.de/schlagzeilen/rss/0,5291,22,00.xml'},
   {name:'NTV',                url:'https://www.n-tv.de/leute/rss'},
 ];
 
@@ -137,7 +136,7 @@ const SRC = {
   'TMZ':'#f472b6','People':'#38bdf8','Hollywood Reporter':'#fbbf24','Variety':'#a78bfa',
   'ABC':'#5b9dff','E! News':'#e879f9','Sky Ent':'#22c3e6','UPI':'#a3e635','EW':'#fb923c',
   'Fox News':'#2563eb','Hello!':'#fb7185','Page Six':'#c084fc','BBC':'#34d399','Guardian':'#2dd4bf',
-  'Rolling Stone':'#f97316','BILD':'#facc15','Promiflash':'#d946ef','Gala':'#818cf8','Bunte':'#fca5a5',
+  'Rolling Stone':'#f97316','BILD':'#facc15','Promiflash':'#d946ef','Gala':'#818cf8','Stern':'#fca5a5',
   'Rolling Stone DE':'#e0a63c','DLF Kultur':'#86efac','T-ONLINE':'#14b8a6','SPIEGEL':'#93c5fd','NTV':'#65a30d'
 };
 
