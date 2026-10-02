@@ -117,31 +117,51 @@ const FEEDS = [
   {name:'RND',        url:'https://www.rnd.de/arc/outboundfeeds/rss/category/politik/',
                       merge:['https://www.rnd.de/arc/outboundfeeds/rss/category/wirtschaft/',
                              'https://www.rnd.de/arc/outboundfeeds/rss/category/panorama/']},
+  // --- neu aufgenommen (02.10.2026) ---
+  {name:'FAZ',        url:'https://www.faz.net/rss/aktuell'},
+  {name:'SZ',         url:'https://www.sueddeutsche.de/news/rss'},
+  {name:'ZEIT',       url:'https://newsfeed.zeit.de/all'},
+  {name:'TAGESSCHAU', url:'https://www.tagesschau.de/xml/rss2'},
+  {name:'FOCUS',      url:'https://rss.focus.de/fol/XML/rss_folnews.xml'},
+  {name:'NZZ',        url:'https://www.nzz.ch/startseite.rss'},
 ];
 
 // Feste Balken-/Quellenfarbe je Quelle (für die Ticker-Ströme)
 const SRC = {
   'SPIEGEL':'#5b9dff','BILD':'#fb923c','T-ONLINE':'#34d399','DTS':'#e0a63c',
   'NTV':'#f472b6','DLF':'#a78bfa','EURONEWS':'#22c3e6','WELT':'#a3e635','BI DE':'#2dd4bf',
-  'RND':'#818cf8'
+  'RND':'#818cf8',
+  'FAZ':'#e8734a','SZ':'#38bdf8','ZEIT':'#cbd5e1','TAGESSCHAU':'#3b82f6','FOCUS':'#ef4444',
+  'NZZ':'#9ca3af'
 };
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
 // Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigener Strom
+// FAZ, SZ, ZEIT, tagesschau sind jetzt sichtbare Ströme (oben in FEEDS) → hier entfernt, damit nichts doppelt lädt.
 const EXTRA_FEEDS = [
   {name:'Google News', url:'https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de'},
-  {name:'tagesschau',  url:'https://www.tagesschau.de/xml/rss2'},
   {name:'Tagesspiegel',url:'https://www.tagesspiegel.de/contentexport/feed/home'},
-  {name:'FAZ',         url:'https://www.faz.net/rss/aktuell'},
-  {name:'SZ',          url:'https://www.sueddeutsche.de/news/rss'},
-  {name:'ZEIT',        url:'https://newsfeed.zeit.de/all'},
   {name:'Handelsblatt',url:'https://www.handelsblatt.com/contentexport/feed/schlagzeilen'},
   {name:'RP Online',   url:'https://rp-online.de/feed.rss'},
-  {name:'RND',         url:'https://www.rnd.de/arc/outboundfeeds/rss/'},
 ];
 const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
 let loadedCount = 0;
+
+// ============================================================
+//  dpa-Filter: eigene Agenturmeldungen (über Zeit, FAZ, SZ … gespiegelt) ausblenden.
+//  Prüft Schlagzeile + Anriss + Autor/Quelle. Greift nur, wo der Feed "dpa" auch nennt.
+//  Trifft auch "dpa-AFX". DTS (dts Nachrichtenagentur) bleibt unberührt.
+//  Zum Abschalten: DPA_FILTER = false.
+const DPA_FILTER = true;
+const DPA_RE = /\bdpa\b/i;
+function isDpa(credit){ return DPA_FILTER && DPA_RE.test(credit || ''); }
+// Text eines (ggf. namespaced) Tags holen, z. B. dc:creator
+function tagText(el, names){
+  for(const n of names){ const t = el.getElementsByTagName(n)[0]; if(t && t.textContent) return t.textContent; }
+  return '';
+}
+// ============================================================
 
 setInterval(()=>{
   const n=new Date(), p=x=>String(x).padStart(2,'0');
@@ -159,13 +179,20 @@ function parseXML(xml) {
       const pub   = (el.querySelector('pubDate,published,updated')?.textContent
                      || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
                      || '').trim();
+      // Anriss + Autor/Quelle NUR für den dpa-Abgleich einsammeln (nicht für die Anzeige)
+      const credit = [
+        title,
+        tagText(el,['description','summary','content','content:encoded']).replace(/<[^>]+>/g,' '),
+        tagText(el,['dc:creator','creator','author']),
+        tagText(el,['source'])
+      ].join(' ');
       const raw = pub ? new Date(pub) : null;
       let date, est=false;
       if(raw && !isNaN(raw.getTime())){ date = raw; }
       else { date = new Date(Date.now() - idx*60000); est = true; } // kein/ungültiges Datum (z. B. BILD) → nach Feed-Reihenfolge oben, ohne Zeitangabe
-      return {title, link, pub, date, est};
+      return {title, link, pub, date, est, credit};
     });
-    return items.filter(i=>i.title.length>3);
+    return items.filter(i=>i.title.length>3 && !isDpa(i.credit));
   } catch(e) { return []; }
 }
 
@@ -192,13 +219,10 @@ async function fetchFeed(url) {
           let date, est=false;
           if(raw && !isNaN(raw.getTime())){ date = raw; }
           else { date = new Date(Date.now() - idx*60000); est = true; }
-          return {
-            title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
-            link:  it.link || '#',
-            pub:   it.pubDate || '',
-            date, est
-          };
-        }).filter(i=>i.title.length>3);
+          const title = (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+          const credit = [title, it.description||'', it.content||'', it.author||''].join(' ');
+          return { title, link: it.link || '#', pub: it.pubDate || '', date, est, credit };
+        }).filter(i=>i.title.length>3 && !isDpa(i.credit));
       }
     }
   } catch(e) {}
