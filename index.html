@@ -104,7 +104,8 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 <script>
 const FEEDS = [
   {name:'AL JAZEERA', url:'https://www.aljazeera.com/xml/rss/all.xml'},
-  {name:"Al Arabiya",  url:"https://english.alarabiya.net/feed/flipboard/en.xml"},
+  {name:'NPR', url:'https://feeds.npr.org/1001/rss.xml',
+             merge:['https://feeds.npr.org/1004/rss.xml']},
   {name:'BAHA',       url:'https://breakingthenews.net/news-feed.xml'},
   {name:'FRANCE 24',  url:'https://www.france24.com/en/rss'},
   {name:'RFI',        url:'https://www.rfi.fr/en/rss'},
