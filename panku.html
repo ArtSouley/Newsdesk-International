@@ -371,7 +371,16 @@ function navApply(scroll){
   const items = navItems(selCol); if(!items.length) return;
   selRow = Math.max(0, Math.min(selRow, items.length-1));
   const el = items[selRow];
-  if(el){ el.classList.add('sel'); if(scroll) el.scrollIntoView({block:'nearest'}); }
+  if(el){ el.classList.add('sel'); if(scroll) navScroll(el); }
+}
+// Auswahl paging-artig ins Sichtfeld holen: unten rausgefallen → an den oberen Rand (frische Seite darunter), oben → an den unteren
+function navScroll(el){
+  const box = el.closest('.col-items'); if(!box) return;
+  const items = [...box.querySelectorAll('a.item')];
+  if(items[0]===el){ box.scrollTop=0; return; }
+  const er = el.getBoundingClientRect(), br = box.getBoundingClientRect();
+  if(er.bottom > br.bottom){ box.scrollTop += (er.top - br.top) - 6; }
+  else if(er.top < br.top){ box.scrollTop += (er.bottom - br.bottom) + 6; }
 }
 function navMove(dCol, dRow){
   const cs = navCols(); if(!cs.length) return;
@@ -384,8 +393,11 @@ function navMove(dCol, dRow){
   navApply(true);
 }
 window.addEventListener('keydown', e=>{
+  const sb=document.getElementById('search-box');
   const tag=(e.target.tagName||'').toLowerCase();
-  if(tag==='input'||tag==='textarea') return;
+  // Eingabefelder nicht kapern – AUSSER das leere Suchfeld, damit die Pfeile auch dann navigieren,
+  // wenn der Fokus nach einem Tab-Wechsel dort geparkt ist.
+  if((tag==='input'||tag==='textarea') && !(e.target===sb && sb && sb.value==='')) return;
   if(e.key==='Enter'){
     if(!navActive) return;
     const el=navItems(selCol)[selRow];
@@ -405,15 +417,17 @@ window.addEventListener('keydown', e=>{
   navMove(dirs[e.key][0], dirs[e.key][1]);
 });
 
-// Nach Tab-Wechsel Tastatur wieder aktiv: evtl. im Suchfeld geparkten Fokus lösen, Auswahl neu setzen
+// Nach Tab-/Seitenwechsel Tastatur wieder aktiv: Fokus in die Spalten holen, im Suchfeld geparkten Fokus lösen.
+// Zeitversetzt wiederholt, weil der Browser den Fokus manchmal erst NACH visibilitychange wiederherstellt.
 function navRefocus(){
-  try{ window.focus(); }catch(e){}
+  const cols=document.getElementById('columns');
   const sb=document.getElementById('search-box');
   if(sb && document.activeElement===sb) sb.blur();
-  if(navActive) navApply(true);
+  if(cols){ cols.tabIndex=-1; cols.style.outline='none'; try{ cols.focus({preventScroll:true}); }catch(e){ try{ cols.focus(); }catch(_){} } }
+  if(navActive) navApply(false);
 }
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) navRefocus(); });
-window.addEventListener('focus', navRefocus);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ navRefocus(); setTimeout(navRefocus,80); } });
+window.addEventListener('focus', ()=>{ navRefocus(); setTimeout(navRefocus,80); });
 window.addEventListener('pageshow', navRefocus);
 
 refreshAll();
