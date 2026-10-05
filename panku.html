@@ -67,6 +67,7 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .item.urgent .item-title{color:var(--urgent);font-weight:700;}
 .item.urgent .item-src{color:var(--urgent);}
 .item:hover.urgent .item-title{color:var(--urgent);}
+.item.sel{background:var(--panel2);box-shadow:inset 0 0 0 2px var(--accent);border-radius:4px;}
 
 .badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
 
@@ -294,6 +295,7 @@ function render() {
     topColumnHTML(q) + cols.map(c=>streamColHTML(c, loading)).join('');
   const sc = document.getElementById('search-count');
   if(sc) sc.textContent = q ? `${list.length} Treffer` : '';
+  navApply(false);
 }
 
 async function loadFeed(feed) {
@@ -355,6 +357,52 @@ document.getElementById('columns').addEventListener('click', e=>{
   if(!a) return;
   const sel = window.getSelection();
   if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
+});
+
+// Tastatur-Navigation: Pfeiltasten bewegen den Auswahl-Balken (←/→ Spalte, ↑/↓ Meldung), Enter öffnet
+let selCol = 0, selRow = 0, navActive = false;
+function navCols(){ return [...document.querySelectorAll('#columns .col')]; }
+function navItems(ci){ const c = navCols()[ci]; return c ? [...c.querySelectorAll('a.item')] : []; }
+function navApply(scroll){
+  document.querySelectorAll('a.item.sel').forEach(e=>e.classList.remove('sel'));
+  if(!navActive) return;
+  const cs = navCols(); if(!cs.length) return;
+  selCol = Math.max(0, Math.min(selCol, cs.length-1));
+  const items = navItems(selCol); if(!items.length) return;
+  selRow = Math.max(0, Math.min(selRow, items.length-1));
+  const el = items[selRow];
+  if(el){ el.classList.add('sel'); if(scroll) el.scrollIntoView({block:'nearest'}); }
+}
+function navMove(dCol, dRow){
+  const cs = navCols(); if(!cs.length) return;
+  if(dCol){
+    let nc = selCol;
+    for(let k=0;k<cs.length;k++){ nc=(nc+dCol+cs.length)%cs.length; if(navItems(nc).length){ selCol=nc; break; } }
+    selRow = Math.min(selRow, Math.max(0, navItems(selCol).length-1));
+  }
+  if(dRow){ selRow = Math.max(0, Math.min(selRow+dRow, navItems(selCol).length-1)); }
+  navApply(true);
+}
+document.addEventListener('keydown', e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea') return;
+  if(e.key==='Enter'){
+    if(!navActive) return;
+    const el=navItems(selCol)[selRow];
+    if(el){ e.preventDefault(); window.open(el.href,'_blank','noopener'); }
+    return;
+  }
+  const dirs={ArrowRight:[1,0],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowUp:[0,-1]};
+  if(!(e.key in dirs)) return;
+  e.preventDefault();
+  if(!navActive){
+    navActive=true;
+    const cs=navCols(); selCol=0; selRow=0;
+    for(let i=0;i<cs.length;i++){ if(navItems(i).length){ selCol=i; break; } }
+    navApply(true);
+    return;
+  }
+  navMove(dirs[e.key][0], dirs[e.key][1]);
 });
 
 refreshAll();
