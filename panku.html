@@ -135,8 +135,8 @@ const FEEDS = [
   {name:'NTV',                url:'https://www.n-tv.de/leute/rss'},
 ];
 
-// Feste Spalte 5: diese Quelle bekommt eine eigene (letzte) Spalte, statt in die
-// frischen Ströme 1–4 gemischt zu werden. BILD liefert kein Datum → dort geparkt,
+// Feste Spalte direkt nach TOP: diese Quelle bekommt eine eigene Spalte, statt in die
+// chronologischen Ströme gemischt zu werden. BILD liefert kein Datum → dort geparkt,
 // damit altes Material die aktuellen Spalten nicht verstopft. Zählt weiter fürs TOP.
 const STREAM_PIN = 'BILD';
 
@@ -268,7 +268,7 @@ function topColumnHTML(q){
   </div>`;
 }
 
-// Ströme 1–4: alle Hauptquellen AUSSER der festen Spalte, streng nach Zeit (neueste zuerst), entdoppelt
+// Chronologische Ströme: alle Hauptquellen AUSSER der festen Spalte, streng nach Zeit (neueste zuerst), entdoppelt
 function streamList(q){
   const all=[];
   data.forEach(f=>{ if(f.status==='ok' && f.name!==STREAM_PIN) f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name})); });
@@ -278,7 +278,7 @@ function streamList(q){
   if(q) list = list.filter(i=>i.title.toLowerCase().includes(q) || (i.src||'').toLowerCase().includes(q));
   return list;
 }
-// Feste Spalte 5: nur die gepinnte Quelle (BILD), in Feed-Reihenfolge (neueste zuerst)
+// Feste Spalte (direkt nach TOP): nur die gepinnte Quelle (BILD), in Feed-Reihenfolge (neueste zuerst)
 function pinList(q){
   const f = data.find(x=>x.name===STREAM_PIN);
   let list = (f && f.status==='ok') ? f.items.map(i=>({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name})) : [];
@@ -308,7 +308,7 @@ function render() {
   const pin = pinList(q);
   const loading = data.every(f=>f.status==='pending'||f.status==='loading');
   document.getElementById('columns').innerHTML =
-    topColumnHTML(q) + cols.map(c=>streamColHTML(c, loading)).join('') + streamColHTML(pin, loading);
+    topColumnHTML(q) + streamColHTML(pin, loading) + cols.map(c=>streamColHTML(c, loading)).join('');
   const sc = document.getElementById('search-count');
   if(sc) sc.textContent = q ? `${list.length + pin.length} Treffer` : '';
   navApply(false);
