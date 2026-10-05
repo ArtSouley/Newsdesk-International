@@ -380,10 +380,10 @@ function navMove(dCol, dRow){
     for(let k=0;k<cs.length;k++){ nc=(nc+dCol+cs.length)%cs.length; if(navItems(nc).length){ selCol=nc; break; } }
     selRow = Math.min(selRow, Math.max(0, navItems(selCol).length-1));
   }
-  if(dRow){ selRow = Math.max(0, Math.min(selRow+dRow, navItems(selCol).length-1)); }
+  if(dRow){ const len=navItems(selCol).length; if(len) selRow=(selRow+dRow+len)%len; }
   navApply(true);
 }
-document.addEventListener('keydown', e=>{
+window.addEventListener('keydown', e=>{
   const tag=(e.target.tagName||'').toLowerCase();
   if(tag==='input'||tag==='textarea') return;
   if(e.key==='Enter'){
@@ -404,6 +404,17 @@ document.addEventListener('keydown', e=>{
   }
   navMove(dirs[e.key][0], dirs[e.key][1]);
 });
+
+// Nach Tab-Wechsel Tastatur wieder aktiv: evtl. im Suchfeld geparkten Fokus lösen, Auswahl neu setzen
+function navRefocus(){
+  try{ window.focus(); }catch(e){}
+  const sb=document.getElementById('search-box');
+  if(sb && document.activeElement===sb) sb.blur();
+  if(navActive) navApply(true);
+}
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) navRefocus(); });
+window.addEventListener('focus', navRefocus);
+window.addEventListener('pageshow', navRefocus);
 
 refreshAll();
 setInterval(refreshAll, 120000);
