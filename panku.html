@@ -14,7 +14,7 @@
   --accent:#4a9eff;--urgent:#ff5666;--tick:#ffffff;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'IBM Plex Sans',system-ui,sans-serif;
-  --boxh:calc((100vh - 98px) / 2); /* zwei volle Reihen füllen den Bildschirm; weitere Reihen scrollen */
+  --boxh:calc((100vh - 98px) / 2); /* Startwert; fitBoxes() passt die Höhe gleich an */
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;}
@@ -43,7 +43,7 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .ticker-txt:hover{animation-play-state:paused;}
 @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
-/* Alles in EIN Raster – TOP ist eine gleich große Kachel, bricht in Reihen um, scrollt als Ganzes */
+/* Alles in EIN Raster – TOP ist eine gleich große Kachel, bricht in Reihen um */
 .columns-wrap{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));grid-auto-rows:var(--boxh);gap:10px;padding:10px;overflow-y:auto;align-content:start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
 .columns-wrap::-webkit-scrollbar{width:6px;}
 .columns-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
@@ -301,7 +301,26 @@ function render() {
     } else sc.textContent = '';
   }
   navApply(false);
+  fitBoxes();
 }
+
+// Kachelhöhe so setzen, dass ALLE Kacheln ohne Scrollen auf einen Bildschirm passen.
+// Misst die tatsächliche Spaltenzahl, rechnet die Reihen aus und verteilt die Höhe.
+function fitBoxes(){
+  const grid = document.getElementById('columns');
+  if(!grid) return;
+  const n = grid.children.length;
+  if(!n) return;
+  const cs = getComputedStyle(grid);
+  const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+  const rows = Math.ceil(n / cols);
+  const gap = 10;
+  const avail = grid.clientHeight - parseFloat(cs.paddingTop||0) - parseFloat(cs.paddingBottom||0);
+  if(avail <= 0) return;
+  const h = Math.max(120, Math.floor((avail - (rows-1)*gap) / rows));
+  grid.style.gridAutoRows = h + 'px';
+}
+window.addEventListener('resize', fitBoxes);
 
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
