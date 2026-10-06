@@ -137,4 +137,333 @@ const SRC = {
   'TMZ':'#f472b6','People':'#38bdf8','Hollywood Reporter':'#fbbf24','Variety':'#a78bfa',
   'ABC':'#5b9dff','E! News':'#e879f9','Sky Ent':'#22c3e6','UPI':'#a3e635','EW':'#fb923c',
   'Fox News':'#2563eb','Hello!':'#fb7185','Page Six':'#c084fc','BBC':'#34d399','Guardian':'#2dd4bf',
-  'Rolling Stone':'#f97316','BILD':'#facc15','Promiflash':'#d946ef','Gala':'#818cf8','Stern':'#fca5
+  'Rolling Stone':'#f97316','BILD':'#facc15','Promiflash':'#d946ef','Gala':'#818cf8','Stern':'#fca5a5',
+  'Rolling Stone DE':'#e0a63c','DLF Kultur':'#86efac','T-ONLINE':'#14b8a6','SPIEGEL':'#93c5fd','NTV':'#65a30d',
+  'RTL STARS':'#ffcc00'
+};
+
+const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
+
+// Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigene Kachel
+const EXTRA_FEEDS = [
+  {name:'Google News',     url:'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=de&gl=DE&ceid=DE:de'},
+  {name:'Rolling Stone',   url:'https://www.rollingstone.com/feed/'},
+  {name:'Rolling Stone DE',url:'http://www.rollingstone.de/?widget=rssfeed&view=feed&contentId=57960',
+                           alt:['https://www.rollingstone.de/feed/']},
+  {name:'DLF Kultur',      url:'https://www.deutschlandfunk.de/kultur.1495.de.rss'},
+];
+const extra = EXTRA_FEEDS.map(f=>({...f, items:[], status:'pending'}));
+let loadedCount = 0;
+
+setInterval(()=>{
+  const n=new Date(), p=x=>String(x).padStart(2,'0');
+  document.getElementById('clock').textContent=
+    `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} MEZ · `+
+    n.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
+},1000);
+
+function parseXML(xml) {
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const items = [...doc.querySelectorAll('item,entry')].slice(0,50).map((el, idx)=>{
+      const title = (el.querySelector('title')?.textContent || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      const link  = el.querySelector('link')?.textContent?.trim() || el.querySelector('link')?.getAttribute('href') || '#';
+      const pub   = (el.querySelector('pubDate,published,updated')?.textContent
+                     || [...el.children].find(c=>/date/i.test(c.tagName))?.textContent
+                     || '').trim();
+      const raw = pub ? new Date(pub) : null;
+      let date, est=false;
+      if(raw && !isNaN(raw.getTime())){ date = raw; }
+      else { date = new Date(Date.now() - idx*60000); est = true; } // kein/ungültiges Datum (z. B. BILD) → nach Feed-Reihenfolge oben, ohne Zeitangabe
+      return {title, link, pub, date, est};
+    });
+    return items.filter(i=>i.title.length>3);
+  } catch(e) { return []; }
+}
+
+async function fetchFeed(url) {
+  const strategies = [
+    async () => { const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); if(!r.ok) return null; const j = await r.json(); return j && j.contents ? j.contents : null; },
+    async () => { const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(url, {signal:AbortSignal.timeout(10000)}); return r.ok ? await r.text() : null; },
+  ];
+  for (const strat of strategies) {
+    try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
+  }
+  // rss2json – holt den Feed serverseitig (greift oft, wo Proxys geblockt werden)
+  try {
+    const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.status === 'ok' && Array.isArray(j.items) && j.items.length) {
+        return j.items.slice(0,50).map((it, idx)=>{
+          const raw = it.pubDate ? new Date(it.pubDate) : null;
+          let date, est=false;
+          if(raw && !isNaN(raw.getTime())){ date = raw; }
+          else { date = new Date(Date.now() - idx*60000); est = true; }
+          return {
+            title: (it.title||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
+            link:  it.link || '#',
+            pub:   it.pubDate || '',
+            date, est
+          };
+        }).filter(i=>i.title.length>3);
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+// Clustering: gleiche Story über mehrere Quellen erkennen und als "TOP"-Kachel bündeln
+const STOP = new Set(['about','after','again','could','would','should','their','there','these','those','which','while','where','being','first','still','three','under','since','other','against','among','because','before','during','people','after','says','star','stars','actor','actress','movie','film','series','season','trailer','video','photos','watch','report','reveals','shares','breaks',
+'einen','gegen','nicht','werden','haben','wegen','immer','schon','wieder','sollte','koennte','wurde','worden','diese','dieser','einem','einer','durch','zwischen','mehr','sein']);
+function sigWords(t){
+  return (t||'').toLowerCase()
+    .replace(/[^a-zäöüßàâçéèêëîïôûùüÿñæœ0-9\s]/g,' ')
+    .split(/\s+/).filter(w=>w.length>=5 && !STOP.has(w));
+}
+function topClusters(){
+  const all=[];
+  data.concat(extra).forEach(f=>{ if(f.status==='ok') f.items.forEach(i=>all.push({title:i.title,link:i.link,date:i.date,est:i.est,src:f.name,words:sigWords(i.title)})); });
+  all.sort((a,b)=>b.date-a.date);
+  const clusters=[];
+  for(const it of all){
+    if(it.words.length<2) continue;
+    let best=null,bestShared=0;
+    for(const c of clusters){
+      let shared=0; for(const w of it.words) if(c.wordset.has(w)) shared++;
+      if(shared>bestShared){ bestShared=shared; best=c; }
+    }
+    if(best && bestShared>=2){
+      best.sources.add(it.src);
+      it.words.forEach(w=>best.wordset.add(w));
+    } else {
+      clusters.push({title:it.title,link:it.link,date:it.date,est:it.est,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
+    }
+  }
+  const now = Date.now();
+  const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
+  const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
+  return clusters.filter(c=>c.sources.size>=2 && ageH(c) <= 1).sort((a,b)=> hot(b)-hot(a));
+}
+function topColumnHTML(q){
+  let cl = topClusters();
+  if(q) cl = cl.filter(c=>c.title.toLowerCase().includes(q) || [...c.sources].some(s=>s.toLowerCase().includes(q)));
+  const body = cl.length ? cl.map(c=>{
+    const n=c.sources.size, full=[...c.sources].join(', '), bc=SRC[c.src]||'var(--faint)';
+    return `<a class="item${isUrgent(c.title)?' urgent':''}" href="${c.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${bc}">
+      <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${c.est ? '' : timeAgo(c.date)}</span></div>
+      <div class="item-title">${esc(c.title)}</div></a>`;
+  }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
+  return `<div class="col box top-box">
+    <div class="col-head"><span class="src-dot" style="background:var(--urgent)"></span><span class="col-name">▲ TOP</span><span class="col-count">${cl.length||''}</span></div>
+    <div class="col-items">${body}</div>
+  </div>`;
+}
+
+// Ein Kästchen je Quelle: zeigt nur die Meldungen dieser Quelle, neueste zuerst, einzeln scrollbar
+function boxItem(i){
+  const c = SRC[i.src] || 'var(--faint)';
+  const t = i.est ? '' : timeAgo(i.date);
+  return `<a class="item${isUrgent(i.title)?' urgent':''}" href="${i.link}" target="_blank" rel="noopener" draggable="false" style="--barc:${c}">
+    ${t ? `<div class="item-meta"><span class="item-time">${t}</span></div>` : ''}
+    <div class="item-title">${esc(i.title)}</div>
+  </a>`;
+}
+function boxHTML(feed, q){
+  let items = feed.status==='ok' ? feed.items : [];
+  const nameHit = (feed.name||'').toLowerCase().includes(q);
+  if(q) items = items.filter(i=>i.title.toLowerCase().includes(q) || nameHit);
+  if(q && !items.length) return '';            // bei Suche leere Kästchen ausblenden
+  const color = SRC[feed.name] || 'var(--faint)';
+  const body = items.length ? items.map(i=>boxItem({...i,src:feed.name})).join('')
+    : (feed.status==='loading'||feed.status==='pending' ? `<div class="col-msg">⟳ lädt…</div>`
+       : feed.status==='fail' ? `<div class="col-msg">– offline</div>` : `<div class="col-msg">–</div>`);
+  return `<div class="col box">
+    <div class="col-head"><span class="src-dot" style="background:${color}"></span><span class="col-name" style="color:${color}">${esc(feed.name)}</span><span class="col-count">${items.length||''}</span></div>
+    <div class="col-items">${body}</div>
+  </div>`;
+}
+
+function render() {
+  const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
+  const boxes = data.map(f=>boxHTML(f,q)).join('');
+  document.getElementById('columns').innerHTML =
+    topColumnHTML(q) + boxes;
+  const sc = document.getElementById('search-count');
+  if(sc){
+    if(q){
+      let total=0;
+      data.forEach(f=>{ if(f.status==='ok'){ const nh=f.name.toLowerCase().includes(q); total += f.items.filter(i=>i.title.toLowerCase().includes(q)||nh).length; } });
+      sc.textContent = `${total} Treffer`;
+    } else sc.textContent = '';
+  }
+  navApply(false);
+}
+
+async function loadFeed(feed) {
+  feed.status = 'loading'; render();
+  try {
+    let items = await fetchFeed(feed.url);
+    if ((!items || !items.length) && feed.alt) {
+      for (const u of feed.alt) { items = await fetchFeed(u); if (items && items.length) break; }
+    }
+    if (feed.merge && feed.merge.length) {
+      for (const u of feed.merge) {
+        try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
+      }
+    }
+    if (!items || items.length === 0) throw new Error('no items');
+    const seen = new Set();
+    items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
+    items.sort((a, b) => b.date - a.date);
+    feed.items  = items.slice(0,60);
+    feed.status = 'ok';
+  } catch(e) {
+    feed.status = 'fail';
+  }
+  loadedCount++;
+  const ok = data.filter(f=>f.status==='ok').length;
+  const failed = data.filter(f=>f.status==='fail').map(f=>f.name);
+  document.getElementById('load-status').textContent =
+    loadedCount < data.length ? `${loadedCount}/${data.length}…`
+      : `✓ ${ok} von ${data.length}` + (failed.length ? ` · fehlt: ${failed.join(', ')}` : ' aktiv');
+  const latest = data.filter(f=>f.status==='ok'&&f.items[0]).map(f=>`[${f.name}] ${f.items[0].title}`);
+  if (latest.length) { document.getElementById('ticker-txt').textContent = latest.join('   //   '); tuneTicker(); }
+  render();
+}
+
+// Drossel: immer nur wenige Feeds gleichzeitig, sonst drosseln die Gratis-Proxys alles weg
+async function runPool(items, limit, worker){
+  let i = 0;
+  const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
+}
+
+// Hintergrund-Quelle laden: nur Items sammeln (für TOP), kein eigenes Kästchen
+async function loadExtra(feed){
+  try{
+    let items = await fetchFeed(feed.url);
+    if((!items||!items.length) && feed.alt){ for(const u of feed.alt){ items=await fetchFeed(u); if(items&&items.length) break; } }
+    feed.items = (items&&items.length)? items.slice(0,60) : [];
+  }catch(e){ feed.items=[]; }
+  feed.status = feed.items.length ? 'ok' : 'fail';
+  render();
+}
+
+async function refreshAll() {
+  loadedCount = 0;
+  data.forEach(f=>{f.items=[];f.status='pending';});
+  extra.forEach(f=>{f.items=[];f.status='pending';});
+  document.getElementById('load-status').textContent = 'lädt…';
+  render();
+  await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
+}
+
+// Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
+document.getElementById('columns').addEventListener('click', e=>{
+  const a = e.target.closest('a.item');
+  if(!a) return;
+  const sel = window.getSelection();
+  if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
+});
+
+// Tastatur-Navigation: Pfeiltasten bewegen den Auswahl-Balken (←/→ Kachel, ↑/↓ Meldung), Enter öffnet
+let selCol = 0, selRow = 0, navActive = false;
+function navCols(){ return [...document.querySelectorAll('#columns .col')]; }
+function navItems(ci){ const c = navCols()[ci]; return c ? [...c.querySelectorAll('a.item')] : []; }
+function navApply(scroll){
+  document.querySelectorAll('a.item.sel').forEach(e=>e.classList.remove('sel'));
+  if(!navActive) return;
+  const cs = navCols(); if(!cs.length) return;
+  selCol = Math.max(0, Math.min(selCol, cs.length-1));
+  const items = navItems(selCol); if(!items.length) return;
+  selRow = Math.max(0, Math.min(selRow, items.length-1));
+  const el = items[selRow];
+  if(el){ el.classList.add('sel'); if(scroll) navScroll(el); }
+}
+// Auswahl paging-artig ins Sichtfeld holen
+function navScroll(el){
+  const box = el.closest('.col-items'); if(!box) return;
+  const items = [...box.querySelectorAll('a.item')];
+  if(items[0]===el){ box.scrollTop=0; return; }
+  const er = el.getBoundingClientRect(), br = box.getBoundingClientRect();
+  if(er.bottom > br.bottom){ box.scrollTop += (er.top - br.top) - 6; }
+  else if(er.top < br.top){ box.scrollTop += (er.bottom - br.bottom) + 6; }
+  el.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+function navMove(dCol, dRow){
+  const cs = navCols(); if(!cs.length) return;
+  if(dCol){
+    let nc = selCol;
+    for(let k=0;k<cs.length;k++){ nc=(nc+dCol+cs.length)%cs.length; if(navItems(nc).length){ selCol=nc; break; } }
+    selRow = Math.min(selRow, Math.max(0, navItems(selCol).length-1));
+  }
+  if(dRow){ const len=navItems(selCol).length; if(len) selRow=(selRow+dRow+len)%len; }
+  navApply(true);
+}
+window.addEventListener('keydown', e=>{
+  const sb=document.getElementById('search-box');
+  const tag=(e.target.tagName||'').toLowerCase();
+  if((tag==='input'||tag==='textarea') && !(e.target===sb && sb && sb.value==='')) return;
+  if(e.key==='Enter'){
+    if(!navActive) return;
+    const el=navItems(selCol)[selRow];
+    if(el){ e.preventDefault(); window.open(el.href,'_blank','noopener'); }
+    return;
+  }
+  const dirs={ArrowRight:[1,0],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowUp:[0,-1]};
+  if(!(e.key in dirs)) return;
+  e.preventDefault();
+  if(!navActive){
+    navActive=true;
+    const cs=navCols(); selCol=0; selRow=0;
+    for(let i=0;i<cs.length;i++){ if(navItems(i).length){ selCol=i; break; } }
+    navApply(true);
+    return;
+  }
+  navMove(dirs[e.key][0], dirs[e.key][1]);
+});
+
+// Nach Tab-/Seitenwechsel Tastatur wieder aktiv: Fokus in die Kacheln holen
+function navRefocus(){
+  const cols=document.getElementById('columns');
+  const sb=document.getElementById('search-box');
+  if(sb && document.activeElement===sb) sb.blur();
+  if(cols){ cols.tabIndex=-1; cols.style.outline='none'; try{ cols.focus({preventScroll:true}); }catch(e){ try{ cols.focus(); }catch(_){} } }
+  if(navActive) navApply(false);
+}
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ navRefocus(); setTimeout(navRefocus,80); } });
+window.addEventListener('focus', ()=>{ navRefocus(); setTimeout(navRefocus,80); });
+window.addEventListener('pageshow', navRefocus);
+
+refreshAll();
+setInterval(refreshAll, 120000);
+
+// Laufband-Tempo konstant halten (unabhängig von der Anzahl Quellen/Textlänge)
+function tuneTicker(){
+  const tt=document.getElementById('ticker-txt');
+  if(!tt) return;
+  const w = tt.scrollWidth || 1600;
+  tt.style.animationDuration = Math.max(60, Math.round(w/100)) + 's';
+}
+
+function timeAgo(d) {
+  if(!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+  const m = Math.floor((Date.now() - d.getTime())/60000);
+  if(isNaN(m)||m<0) return '';
+  if(m<2)    return 'eben';
+  if(m<60)   return `${m} Min.`;
+  if(m<1440) return `${Math.floor(m/60)} Std.`;
+  return `${Math.floor(m/1440)}d`;
+}
+// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter (EN + DE) → ganze Schlagzeile rot
+const URGENT = /(\bbreaking\b|\bjust in\b|\burgent\b|\bexclusive\b|\balert\b|\bconfirmed\b|\bdies\b|\bdead\b|\bdeath\b|\bgestorben\b|\btot\b|\beil\b|\bexklusiv\b)/i;
+function isUrgent(t){ return URGENT.test(t||''); }
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
