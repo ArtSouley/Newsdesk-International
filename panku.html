@@ -43,11 +43,13 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .ticker-txt:hover{animation-play-state:paused;}
 @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
-.columns-wrap{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));grid-auto-rows:auto;align-items:start;gap:10px;padding:10px;overflow-y:auto;align-content:start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
+.columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow-y:auto;align-items:flex-start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
 .columns-wrap::-webkit-scrollbar{width:6px;}
 .columns-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
+/* Spalten-Stapel: jede Spalte ist unabhängig – zieht man eine Kachel größer, rutschen nur die Kacheln DARUNTER in derselben Spalte. */
+.colset{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:10px;}
 /* Jede Kachel ist unten per Griff in der Höhe ziehbar (resize). Doppelklick auf den Kopf = Automatik. */
-.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);resize:vertical;}
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);resize:vertical;flex:none;}
 .col-head{cursor:default;}
 .col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
 .col-name{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -75,7 +77,7 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
 
 @media(max-width:760px){
-  .columns-wrap{grid-template-columns:1fr;grid-auto-rows:340px;}
+  .columns-wrap{flex-direction:column;}
 }
 </style>
 </head>
@@ -287,11 +289,23 @@ function boxHTML(feed, q){
   </div>`;
 }
 
+// Wie viele Spalten passen nebeneinander (Mindestbreite 230 px)?
+function colCount(){
+  const grid = document.getElementById('columns');
+  const w = (grid ? grid.clientWidth : window.innerWidth) - 20; // minus Innenabstand
+  const min = 230, gap = 10;
+  return Math.max(1, Math.floor((w + gap) / (min + gap)));
+}
 function render() {
   const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
-  const boxes = data.map(f=>boxHTML(f,q)).join('');
+  // Reihenfolge: TOP zuerst, dann die Quellen; verteilt reihum auf die Spalten-Stapel
+  const parts = [ topColumnHTML(q) ];
+  data.forEach(f=>{ const h = boxHTML(f,q); if(h) parts.push(h); });
+  const N = colCount();
+  const cols = Array.from({length:N}, ()=>[]);
+  parts.forEach((html,k)=> cols[k % N].push(html));
   document.getElementById('columns').innerHTML =
-    topColumnHTML(q) + boxes;
+    cols.map(c=>`<div class="colset">${c.join('')}</div>`).join('');
   const sc = document.getElementById('search-count');
   if(sc){
     if(q){
@@ -311,21 +325,21 @@ let autoH = 0;        // zuletzt automatisch berechnete Höhe
 function fitBoxes(){
   const grid = document.getElementById('columns');
   if(!grid) return;
-  const kids = [...grid.children];
-  if(!kids.length) return;
-  const cs = getComputedStyle(grid);
-  const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 1;
-  const rows = Math.ceil(kids.length / cols);
+  const allCols = grid.querySelectorAll('.col');
+  if(!allCols.length) return;
+  const N = grid.children.length || 1;           // Anzahl Spalten (.colset)
+  const rows = Math.ceil(allCols.length / N);     // höchste Spalte
   const gap = 10;
+  const cs = getComputedStyle(grid);
   const avail = grid.clientHeight - parseFloat(cs.paddingTop||0) - parseFloat(cs.paddingBottom||0);
   if(avail <= 0) return;
   autoH = Math.max(120, Math.floor((avail - (rows-1)*gap) / rows));
-  kids.forEach(col=>{
+  allCols.forEach(col=>{
     const key = col.getAttribute('data-src');
     col.style.height = ((key && customH[key]) || autoH) + 'px';
   });
 }
-window.addEventListener('resize', fitBoxes);
+window.addEventListener('resize', render);   // bei Breitenänderung Spaltenzahl neu berechnen
 
 // Nach einem Zieh-Vorgang am Griff: abweichende Höhen merken (bleiben beim Neu-Laden erhalten)
 window.addEventListener('pointerup', ()=>{
