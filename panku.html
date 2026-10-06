@@ -122,7 +122,6 @@ const FEEDS = [
   {name:'Variety',            url:'https://variety.com/feed/'},
   {name:'ABC',                url:'https://feeds.abcnews.com/abcnews/entertainmentheadlines'},
   {name:'E! News',            url:'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml'},
-  {name:'Sky Ent',            url:'https://feeds.skynews.com/feeds/rss/entertainment.xml'},
   {name:'UPI',                url:'https://rss.upi.com/news/entertainment_news.rss'},
   {name:'Fox News',           url:'https://moxie.foxnews.com/google-publisher/entertainment.xml'},
   {name:'Hello!',             url:'https://www.hellomagazine.com/rss/'},
@@ -146,6 +145,7 @@ const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 // Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigene Kachel
 const EXTRA_FEEDS = [
   {name:'Google News',     url:'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=de&gl=DE&ceid=DE:de'},
+  {name:'Sky Ent',         url:'https://feeds.skynews.com/feeds/rss/entertainment.xml'},
   {name:'Rolling Stone',   url:'https://www.rollingstone.com/feed/'},
   {name:'Rolling Stone DE',url:'http://www.rollingstone.de/?widget=rssfeed&view=feed&contentId=57960',
                            alt:['https://www.rollingstone.de/feed/']},
