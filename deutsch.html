@@ -14,7 +14,7 @@
   --accent:#4a9eff;--urgent:#ff5666;--tick:#ffffff;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'IBM Plex Sans',system-ui,sans-serif;
-  --boxh:calc((100vh - 98px) / 2); /* zwei volle Reihen füllen den Bildschirm; weitere Reihen scrollen */
+  --boxh:calc((100vh - 98px) / 2);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;}
@@ -43,11 +43,14 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .ticker-txt:hover{animation-play-state:paused;}
 @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
-/* Alles in EIN Raster – TOP ist eine gleich große Kachel, bricht in Reihen um, scrollt als Ganzes */
-.columns-wrap{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));grid-auto-rows:var(--boxh);gap:10px;padding:10px;overflow-y:auto;align-content:start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
+.columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow-y:auto;align-items:flex-start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
 .columns-wrap::-webkit-scrollbar{width:6px;}
 .columns-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
-.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:0;}
+/* Spalten-Stapel: jede Spalte ist unabhängig – zieht man eine Kachel größer, rutschen nur die Kacheln DARUNTER in derselben Spalte. */
+.colset{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:10px;}
+/* Jede Kachel ist unten per Griff in der Höhe ziehbar (resize). Doppelklick auf den Kopf = Automatik. */
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);resize:vertical;flex:none;}
+.col-head{cursor:default;}
 .top-box .col-name{color:var(--urgent);}
 .col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
 .col-name{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -75,7 +78,7 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
 
 @media(max-width:760px){
-  .columns-wrap{grid-template-columns:1fr;grid-auto-rows:340px;}
+  .columns-wrap{flex-direction:column;}
 }
 </style>
 </head>
@@ -236,8 +239,6 @@ function topClusters(){
       clusters.push({title:it.title,link:it.link,date:it.date,est:it.est,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
-  // "Hotness": viele Quellen zählen, aber Frische stark – nur Storys der letzten Stunde;
-  // wird 1 Std. lang nichts Neues gemeldet, fällt das Thema ganz raus.
   const now = Date.now();
   const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
   const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
@@ -252,13 +253,12 @@ function topColumnHTML(q){
       <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${c.est ? '' : timeAgo(c.date)}</span></div>
       <div class="item-title">${esc(c.title)}</div></a>`;
   }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
-  return `<div class="col box top-box">
+  return `<div class="col box top-box" data-src="__TOP__" style="${customH['__TOP__']?`height:${customH['__TOP__']}px`:''}">
     <div class="col-head"><span class="src-dot" style="background:var(--urgent)"></span><span class="col-name">▲ TOP</span><span class="col-count">${cl.length||''}</span></div>
     <div class="col-items">${body}</div>
   </div>`;
 }
 
-// Ein Kästchen je Quelle: zeigt nur die Meldungen dieser Quelle, neueste zuerst, einzeln scrollbar
 function boxItem(i){
   const c = SRC[i.src] || 'var(--faint)';
   const t = i.est ? '' : timeAgo(i.date);
@@ -271,22 +271,33 @@ function boxHTML(feed, q){
   let items = feed.status==='ok' ? feed.items : [];
   const nameHit = (feed.name||'').toLowerCase().includes(q);
   if(q) items = items.filter(i=>i.title.toLowerCase().includes(q) || nameHit);
-  if(q && !items.length) return '';            // bei Suche leere Kästchen ausblenden
+  if(q && !items.length) return '';
   const color = SRC[feed.name] || 'var(--faint)';
   const body = items.length ? items.map(i=>boxItem({...i,src:feed.name})).join('')
     : (feed.status==='loading'||feed.status==='pending' ? `<div class="col-msg">⟳ lädt…</div>`
        : feed.status==='fail' ? `<div class="col-msg">– offline</div>` : `<div class="col-msg">–</div>`);
-  return `<div class="col box">
+  return `<div class="col box" data-src="${esc(feed.name)}" style="${customH[feed.name]?`height:${customH[feed.name]}px`:''}">
     <div class="col-head"><span class="src-dot" style="background:${color}"></span><span class="col-name" style="color:${color}">${esc(feed.name)}</span><span class="col-count">${items.length||''}</span></div>
     <div class="col-items">${body}</div>
   </div>`;
 }
 
+// Wie viele Spalten passen nebeneinander (Mindestbreite 230 px)?
+function colCount(){
+  const grid = document.getElementById('columns');
+  const w = (grid ? grid.clientWidth : window.innerWidth) - 20;
+  const min = 230, gap = 10;
+  return Math.max(1, Math.floor((w + gap) / (min + gap)));
+}
 function render() {
   const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
-  const boxes = data.map(f=>boxHTML(f,q)).join('');
+  const parts = [ topColumnHTML(q) ];
+  data.forEach(f=>{ const h = boxHTML(f,q); if(h) parts.push(h); });
+  const N = colCount();
+  const cols = Array.from({length:N}, ()=>[]);
+  parts.forEach((html,k)=> cols[k % N].push(html));
   document.getElementById('columns').innerHTML =
-    topColumnHTML(q) + boxes;
+    cols.map(c=>`<div class="colset">${c.join('')}</div>`).join('');
   const sc = document.getElementById('search-count');
   if(sc){
     if(q){
@@ -296,31 +307,68 @@ function render() {
     } else sc.textContent = '';
   }
   navApply(false);
+  fitBoxes();
 }
+
+// Auto-Höhe: alle Kacheln passen ohne Scrollen auf einen Bildschirm.
+const customH = {};
+let autoH = 0;
+function fitBoxes(){
+  const grid = document.getElementById('columns');
+  if(!grid) return;
+  const allCols = grid.querySelectorAll('.col');
+  if(!allCols.length) return;
+  const N = grid.children.length || 1;
+  const rows = Math.ceil(allCols.length / N);
+  const gap = 10;
+  const cs = getComputedStyle(grid);
+  const avail = grid.clientHeight - parseFloat(cs.paddingTop||0) - parseFloat(cs.paddingBottom||0);
+  if(avail <= 0) return;
+  autoH = Math.max(120, Math.floor((avail - (rows-1)*gap) / rows));
+  allCols.forEach(col=>{
+    const key = col.getAttribute('data-src');
+    col.style.height = ((key && customH[key]) || autoH) + 'px';
+  });
+}
+window.addEventListener('resize', render);
+
+window.addEventListener('pointerup', ()=>{
+  setTimeout(()=>{
+    document.querySelectorAll('#columns .col').forEach(col=>{
+      const key = col.getAttribute('data-src'); if(!key) return;
+      const hNow = Math.round(col.getBoundingClientRect().height);
+      if(Math.abs(hNow - autoH) > 3) customH[key] = hNow;
+    });
+  }, 0);
+});
+document.getElementById('columns').addEventListener('dblclick', e=>{
+  const head = e.target.closest('.col-head'); if(!head) return;
+  const col = head.closest('.col'); if(!col) return;
+  const key = col.getAttribute('data-src'); if(!key) return;
+  delete customH[key];
+  col.style.height = autoH + 'px';
+});
 
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
     let items = await fetchFeed(feed.url);
-    // Ersatz-Adressen probieren, falls die Haupt-URL nichts liefert
     if ((!items || !items.length) && feed.alt) {
       for (const u of feed.alt) {
         items = await fetchFeed(u);
         if (items && items.length) break;
       }
     }
-    // Zusatz-Feeds derselben Quelle dazumischen (z. B. t-online Schlagzeilen + Nachrichten)
     if (feed.merge && feed.merge.length) {
       for (const u of feed.merge) {
         try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
       }
     }
     if (!items || items.length === 0) throw new Error('no items');
-    // Dubletten anhand des Titels entfernen
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
-    feed.items  = items.slice(0,20);   // nur die neuesten 20 Meldungen je Kachel
+    feed.items  = items.slice(0,20);
     feed.status = 'ok';
   } catch(e) {
     feed.status = 'fail';
@@ -336,14 +384,12 @@ async function loadFeed(feed) {
   render();
 }
 
-// Drossel: immer nur wenige Feeds gleichzeitig, sonst drosseln die Gratis-Proxys alles weg
 async function runPool(items, limit, worker){
   let i = 0;
   const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
   await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
 }
 
-// Hintergrund-Quelle laden: nur Items sammeln (für TOP), kein eigenes Kästchen
 async function loadExtra(feed){
   try{
     let items = await fetchFeed(feed.url);
@@ -363,7 +409,6 @@ async function refreshAll() {
   await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
 }
 
-// Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
 document.getElementById('columns').addEventListener('click', e=>{
   const a = e.target.closest('a.item');
   if(!a) return;
@@ -371,7 +416,7 @@ document.getElementById('columns').addEventListener('click', e=>{
   if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
 });
 
-// Tastatur-Navigation: Pfeiltasten bewegen den Auswahl-Balken (←/→ Kachel, ↑/↓ Meldung), Enter öffnet
+// Tastatur-Navigation: ←/→ Kachel, ↑/↓ Meldung, Enter öffnet
 let selCol = 0, selRow = 0, navActive = false;
 function navCols(){ return [...document.querySelectorAll('#columns .col')]; }
 function navItems(ci){ const c = navCols()[ci]; return c ? [...c.querySelectorAll('a.item')] : []; }
