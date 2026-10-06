@@ -48,9 +48,11 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .columns-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
 /* Spalten-Stapel: jede Spalte ist unabhängig – zieht man eine Kachel größer, rutschen nur die Kacheln DARUNTER in derselben Spalte. */
 .colset{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:10px;}
-/* Jede Kachel ist unten per Griff in der Höhe ziehbar (resize). Doppelklick auf den Kopf = Automatik. */
-.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);resize:vertical;flex:none;}
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);flex:none;}
 .col-head{cursor:default;}
+/* Ziehgriff: ▾ mittig unten – Höhe der Kachel ziehen */
+.col-grip{flex-shrink:0;height:16px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;color:var(--faint);font-size:1rem;line-height:1;background:var(--panel);border-top:1px solid var(--line);user-select:none;-webkit-user-select:none;touch-action:none;}
+.col-grip:hover{color:var(--accent);background:var(--panel2);}
 .top-box .col-name{color:var(--urgent);}
 .col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
 .col-name{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -129,7 +131,6 @@ const FEEDS = [
   {name:'NY Post',    url:'https://nypost.com/feed/'},
 ];
 
-// Feste Balken-/Quellenfarbe je Quelle
 const SRC = {
   'BAHA':'#e879f9','AA':'#a3e635','BBC':'#5b9dff','GUARDIAN':'#22c3e6',
   'SKY NEWS':'#f472b6','NPR':'#fb923c','ABC':'#818cf8','NBC':'#facc15',
@@ -139,8 +140,7 @@ const SRC = {
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
-// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigenes Kästchen).
-// DW, BI US und Axios laufen hier weiter mit, damit sie fürs Clustering zählen.
+// Hintergrund-Quellen fließen NUR in die TOP-Spalte. DW, BI US, Axios zählen fürs Clustering.
 const EXTRA_FEEDS = [
   {name:'Google News',url:'https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en'},
   {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
@@ -259,6 +259,7 @@ function topColumnHTML(q){
   return `<div class="col box top-box" data-src="__TOP__" style="${customH['__TOP__']?`height:${customH['__TOP__']}px`:''}">
     <div class="col-head"><span class="src-dot" style="background:var(--urgent)"></span><span class="col-name">▲ TOP</span><span class="col-count">${cl.length||''}</span></div>
     <div class="col-items">${body}</div>
+    <div class="col-grip" title="Höhe ziehen">▾</div>
   </div>`;
 }
 
@@ -282,10 +283,10 @@ function boxHTML(feed, q){
   return `<div class="col box" data-src="${esc(feed.name)}" style="${customH[feed.name]?`height:${customH[feed.name]}px`:''}">
     <div class="col-head"><span class="src-dot" style="background:${color}"></span><span class="col-name" style="color:${color}">${esc(feed.name)}</span><span class="col-count">${items.length||''}</span></div>
     <div class="col-items">${body}</div>
+    <div class="col-grip" title="Höhe ziehen">▾</div>
   </div>`;
 }
 
-// Wie viele Spalten passen nebeneinander (Mindestbreite 230 px)?
 function colCount(){
   const grid = document.getElementById('columns');
   const w = (grid ? grid.clientWidth : window.innerWidth) - 20;
@@ -313,7 +314,6 @@ function render() {
   fitBoxes();
 }
 
-// Auto-Höhe: alle Kacheln passen ohne Scrollen auf einen Bildschirm.
 const customH = {};
 let autoH = 0;
 function fitBoxes(){
@@ -335,14 +335,30 @@ function fitBoxes(){
 }
 window.addEventListener('resize', render);
 
+// Ziehgriff ▾ (unten mittig): nur diese Kachel in der Höhe ziehen.
+let dragCol = null, dragStartY = 0, dragStartH = 0;
+document.getElementById('columns').addEventListener('pointerdown', e=>{
+  const grip = e.target.closest('.col-grip'); if(!grip) return;
+  dragCol = grip.closest('.col'); if(!dragCol) return;
+  dragStartY = e.clientY;
+  dragStartH = dragCol.getBoundingClientRect().height;
+  try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+  e.preventDefault();
+});
+window.addEventListener('pointermove', e=>{
+  if(!dragCol) return;
+  const h = Math.max(120, Math.round(dragStartH + (e.clientY - dragStartY)));
+  dragCol.style.height = h + 'px';
+});
 window.addEventListener('pointerup', ()=>{
-  setTimeout(()=>{
-    document.querySelectorAll('#columns .col').forEach(col=>{
-      const key = col.getAttribute('data-src'); if(!key) return;
-      const hNow = Math.round(col.getBoundingClientRect().height);
-      if(Math.abs(hNow - autoH) > 3) customH[key] = hNow;
-    });
-  }, 0);
+  if(!dragCol) return;
+  const key = dragCol.getAttribute('data-src');
+  const h = Math.round(dragCol.getBoundingClientRect().height);
+  if(key){
+    if(Math.abs(h - autoH) <= 6) delete customH[key];
+    else customH[key] = h;
+  }
+  dragCol = null;
 });
 document.getElementById('columns').addEventListener('dblclick', e=>{
   const head = e.target.closest('.col-head'); if(!head) return;
@@ -419,7 +435,6 @@ document.getElementById('columns').addEventListener('click', e=>{
   if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
 });
 
-// Tastatur-Navigation: ←/→ Kachel, ↑/↓ Meldung, Enter öffnet
 let selCol = 0, selRow = 0, navActive = false;
 function navCols(){ return [...document.querySelectorAll('#columns .col')]; }
 function navItems(ci){ const c = navCols()[ci]; return c ? [...c.querySelectorAll('a.item')] : []; }
