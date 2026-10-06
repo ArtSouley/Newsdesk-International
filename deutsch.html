@@ -114,20 +114,22 @@ const FEEDS = [
   {name:'DLF',        url:'https://www.deutschlandfunk.de/die-nachrichten.353.de.rss'},
   {name:'EURONEWS',   url:'https://de.euronews.com/rss?format=mrss&level=theme&name=news'},
   {name:'WELT',       url:'https://www.welt.de/feeds/latest.rss'},
-  {name:'BI DE',      url:'https://www.businessinsider.de/feed/businessinsider-alle-artikel'},
+  {name:'Tagesspiegel',url:'https://www.tagesspiegel.de/contentexport/feed/home'},
   {name:'RND',        url:'https://www.rnd.de/arc/outboundfeeds/rss/category/politik/',
                       merge:['https://www.rnd.de/arc/outboundfeeds/rss/category/wirtschaft/',
                              'https://www.rnd.de/arc/outboundfeeds/rss/category/panorama/']},
   {name:'Tagesschau', url:'https://www.tagesschau.de/xml/rss2'},
-  {name:'SZ',         url:'https://www.sueddeutsche.de/news/rss'},
+  {name:'SZ',         url:'https://rss.sueddeutsche.de/rss/Topthemen',
+                      alt:['https://rss.sueddeutsche.de/app/service/rss/alles/index.rss?output=rss',
+                           'https://www.sueddeutsche.de/news/rss']},
   {name:'ZEIT',       url:'https://newsfeed.zeit.de/all'},
 ];
 
 // Feste Balken-/Quellenfarbe je Quelle
 const SRC = {
   'SPIEGEL':'#5b9dff','BILD':'#fb923c','T-ONLINE':'#34d399','DTS':'#e0a63c',
-  'NTV':'#f472b6','DLF':'#a78bfa','EURONEWS':'#22c3e6','WELT':'#a3e635','BI DE':'#2dd4bf',
-  'RND':'#818cf8','Tagesschau':'#2563eb','SZ':'#facc15','ZEIT':'#f87171'
+  'NTV':'#f472b6','DLF':'#a78bfa','EURONEWS':'#22c3e6','WELT':'#a3e635','Tagesspiegel':'#2dd4bf',
+  'RND':'#818cf8','Tagesschau':'#2563eb','SZ':'#facc15','ZEIT':'#f87171','BI DE':'#fca5a5'
 };
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
@@ -135,7 +137,7 @@ const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 // Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigenes Kästchen)
 const EXTRA_FEEDS = [
   {name:'Google News', url:'https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de'},
-  {name:'Tagesspiegel',url:'https://www.tagesspiegel.de/contentexport/feed/home'},
+  {name:'BI DE',       url:'https://www.businessinsider.de/feed/businessinsider-alle-artikel'},
   {name:'FAZ',         url:'https://www.faz.net/rss/aktuell'},
   {name:'Handelsblatt',url:'https://www.handelsblatt.com/contentexport/feed/schlagzeilen'},
   {name:'RP Online',   url:'https://rp-online.de/feed.rss'},
