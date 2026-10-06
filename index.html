@@ -325,7 +325,7 @@ async function loadFeed(feed) {
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
-    feed.items  = items.slice(0,60);
+    feed.items  = items.slice(0,20);   // nur die neuesten 20 Meldungen je Kachel
     feed.status = 'ok';
   } catch(e) {
     feed.status = 'fail';
