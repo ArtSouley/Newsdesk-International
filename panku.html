@@ -43,12 +43,12 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .ticker-txt:hover{animation-play-state:paused;}
 @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
-/* Alles in EIN Raster – TOP ist eine gleich große Kachel, bricht in Reihen um */
-.columns-wrap{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));grid-auto-rows:var(--boxh);gap:10px;padding:10px;overflow-y:auto;align-content:start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
+.columns-wrap{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));grid-auto-rows:auto;align-items:start;gap:10px;padding:10px;overflow-y:auto;align-content:start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
 .columns-wrap::-webkit-scrollbar{width:6px;}
 .columns-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
-.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:0;}
-.top-box .col-name{color:var(--urgent);}
+/* Jede Kachel ist unten per Griff in der Höhe ziehbar (resize). Doppelklick auf den Kopf = Automatik. */
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);resize:vertical;}
+.col-head{cursor:default;}
 .col-head{padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:0.6rem;font-weight:600;letter-spacing:0.14em;flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:31px;}
 .col-name{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .src-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -257,7 +257,7 @@ function topColumnHTML(q){
       <div class="item-meta"><span class="badge" title="${esc(full)}">×${n}</span><span class="item-time">${c.est ? '' : timeAgo(c.date)}</span></div>
       <div class="item-title">${esc(c.title)}</div></a>`;
   }).join('') : `<div class="col-msg">Noch keine Mehrfach-Meldung</div>`;
-  return `<div class="col box top-box">
+  return `<div class="col box top-box" data-src="__TOP__" style="${customH['__TOP__']?`height:${customH['__TOP__']}px`:''}">
     <div class="col-head"><span class="src-dot" style="background:var(--urgent)"></span><span class="col-name">▲ TOP</span><span class="col-count">${cl.length||''}</span></div>
     <div class="col-items">${body}</div>
   </div>`;
@@ -281,7 +281,7 @@ function boxHTML(feed, q){
   const body = items.length ? items.map(i=>boxItem({...i,src:feed.name})).join('')
     : (feed.status==='loading'||feed.status==='pending' ? `<div class="col-msg">⟳ lädt…</div>`
        : feed.status==='fail' ? `<div class="col-msg">– offline</div>` : `<div class="col-msg">–</div>`);
-  return `<div class="col box">
+  return `<div class="col box" data-src="${esc(feed.name)}" style="${customH[feed.name]?`height:${customH[feed.name]}px`:''}">
     <div class="col-head"><span class="src-dot" style="background:${color}"></span><span class="col-name" style="color:${color}">${esc(feed.name)}</span><span class="col-count">${items.length||''}</span></div>
     <div class="col-items">${body}</div>
   </div>`;
@@ -304,23 +304,47 @@ function render() {
   fitBoxes();
 }
 
-// Kachelhöhe so setzen, dass ALLE Kacheln ohne Scrollen auf einen Bildschirm passen.
-// Misst die tatsächliche Spaltenzahl, rechnet die Reihen aus und verteilt die Höhe.
+// Auto-Höhe: alle Kacheln passen ohne Scrollen auf einen Bildschirm.
+// Vom Nutzer gezogene Kacheln (customH) behalten ihre Höhe.
+const customH = {};   // src -> px (per Griff gezogen)
+let autoH = 0;        // zuletzt automatisch berechnete Höhe
 function fitBoxes(){
   const grid = document.getElementById('columns');
   if(!grid) return;
-  const n = grid.children.length;
-  if(!n) return;
+  const kids = [...grid.children];
+  if(!kids.length) return;
   const cs = getComputedStyle(grid);
   const cols = cs.gridTemplateColumns.split(' ').filter(Boolean).length || 1;
-  const rows = Math.ceil(n / cols);
+  const rows = Math.ceil(kids.length / cols);
   const gap = 10;
   const avail = grid.clientHeight - parseFloat(cs.paddingTop||0) - parseFloat(cs.paddingBottom||0);
   if(avail <= 0) return;
-  const h = Math.max(120, Math.floor((avail - (rows-1)*gap) / rows));
-  grid.style.gridAutoRows = h + 'px';
+  autoH = Math.max(120, Math.floor((avail - (rows-1)*gap) / rows));
+  kids.forEach(col=>{
+    const key = col.getAttribute('data-src');
+    col.style.height = ((key && customH[key]) || autoH) + 'px';
+  });
 }
 window.addEventListener('resize', fitBoxes);
+
+// Nach einem Zieh-Vorgang am Griff: abweichende Höhen merken (bleiben beim Neu-Laden erhalten)
+window.addEventListener('pointerup', ()=>{
+  setTimeout(()=>{
+    document.querySelectorAll('#columns .col').forEach(col=>{
+      const key = col.getAttribute('data-src'); if(!key) return;
+      const hNow = Math.round(col.getBoundingClientRect().height);
+      if(Math.abs(hNow - autoH) > 3) customH[key] = hNow;
+    });
+  }, 0);
+});
+// Doppelklick auf den Kachel-Kopf: Kachel wieder auf Automatik
+document.getElementById('columns').addEventListener('dblclick', e=>{
+  const head = e.target.closest('.col-head'); if(!head) return;
+  const col = head.closest('.col'); if(!col) return;
+  const key = col.getAttribute('data-src'); if(!key) return;
+  delete customH[key];
+  col.style.height = autoH + 'px';
+});
 
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
