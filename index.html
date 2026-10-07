@@ -14,7 +14,7 @@
   --accent:#4a9eff;--urgent:#ff5666;--tick:#ffffff;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'IBM Plex Sans',system-ui,sans-serif;
-  --boxh:calc((100vh - 98px) / 2);
+  --boxh:calc((100vh - 98px) / 2); /* zwei volle Reihen füllen den Bildschirm; weitere Reihen scrollen */
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;}
@@ -43,11 +43,13 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .ticker-txt:hover{animation-play-state:paused;}
 @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
+/* Alles in EIN Raster – TOP ist eine gleich große Kachel, bricht in Reihen um, scrollt als Ganzes */
 .columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow-y:auto;align-items:flex-start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
 .columns-wrap::-webkit-scrollbar{width:6px;}
 .columns-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
 /* Spalten-Stapel: jede Spalte ist unabhängig – zieht man eine Kachel größer, rutschen nur die Kacheln DARUNTER in derselben Spalte. */
 .colset{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:10px;}
+/* Jede Kachel ist unten per Griff in der Höhe ziehbar (resize). Doppelklick auf den Kopf = Automatik. */
 .col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);flex:none;}
 .col-head{cursor:default;}
 /* Ziehgriff: ▾ mittig unten – Höhe der Kachel ziehen */
@@ -131,6 +133,7 @@ const FEEDS = [
   {name:'NY Post',    url:'https://nypost.com/feed/'},
 ];
 
+// Feste Balken-/Quellenfarbe je Quelle
 const SRC = {
   'BAHA':'#e879f9','AA':'#a3e635','BBC':'#5b9dff','GUARDIAN':'#22c3e6',
   'SKY NEWS':'#f472b6','NPR':'#fb923c','ABC':'#818cf8','NBC':'#facc15',
@@ -140,7 +143,8 @@ const SRC = {
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
-// Hintergrund-Quellen fließen NUR in die TOP-Spalte. DW, BI US, Axios zählen fürs Clustering.
+// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigenes Kästchen).
+// DW, BI US und Axios laufen hier weiter mit, damit sie fürs Clustering zählen.
 const EXTRA_FEEDS = [
   {name:'Google News',url:'https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en'},
   {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
@@ -174,7 +178,7 @@ function parseXML(xml) {
       const raw = pub ? new Date(pub) : null;
       let date, est=false;
       if(raw && !isNaN(raw.getTime())){ date = raw; }
-      else { date = new Date(Date.now() - idx*60000); est = true; }
+      else { date = new Date(Date.now() - idx*60000); est = true; } // kein/ungültiges Datum → nach Feed-Reihenfolge oben, ohne Zeitangabe
       return {title, link, pub, date, est};
     });
     return items.filter(i=>i.title.length>3);
@@ -193,6 +197,7 @@ async function fetchFeed(url) {
   for (const strat of strategies) {
     try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
   }
+  // rss2json – holt den Feed serverseitig (greift oft, wo Proxys geblockt werden)
   try {
     const r = await fetch(`https://api.rss2json.com/v1/api.json?count=50&rss_url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)});
     if (r.ok) {
@@ -216,6 +221,7 @@ async function fetchFeed(url) {
   return null;
 }
 
+// Clustering: gleiche Story über mehrere Quellen erkennen und als "TOP"-Spalte bündeln
 const STOP = new Set(['about','after','again','could','would','should','their','there','these','those','which','while','where','being','first','still','three','under','since','other','against','among','because','before','during','could','people','minister','president',
 'einen','gegen','nicht','werden','haben','wegen','immer','schon','wieder','sollte','koennte','wurde','worden','diese','dieser','einem','einer','durch','zwischen','mehr','sein']);
 function sigWords(t){
@@ -242,6 +248,8 @@ function topClusters(){
       clusters.push({title:it.title,link:it.link,date:it.date,est:it.est,src:it.src,sources:new Set([it.src]),wordset:new Set(it.words)});
     }
   }
+  // "Hotness": viele Quellen zählen, aber Frische stark – nur Storys der letzten Stunde;
+  // wird 1 Std. lang nichts Neues gemeldet, fällt das Thema ganz raus.
   const now = Date.now();
   const ageH = c => Math.max(0,(now - c.date.getTime())/3600000);
   const hot  = c => c.sources.size / Math.pow(ageH(c) + 2, 2.3);
@@ -263,6 +271,7 @@ function topColumnHTML(q){
   </div>`;
 }
 
+// Ein Kästchen je Quelle: zeigt nur die Meldungen dieser Quelle, neueste zuerst, einzeln scrollbar
 function boxItem(i){
   const c = SRC[i.src] || 'var(--faint)';
   const t = i.est ? '' : timeAgo(i.date);
@@ -275,7 +284,7 @@ function boxHTML(feed, q){
   let items = feed.status==='ok' ? feed.items : [];
   const nameHit = (feed.name||'').toLowerCase().includes(q);
   if(q) items = items.filter(i=>i.title.toLowerCase().includes(q) || nameHit);
-  if(q && !items.length) return '';
+  if(q && !items.length) return '';            // bei Suche leere Kästchen ausblenden
   const color = SRC[feed.name] || 'var(--faint)';
   const body = items.length ? items.map(i=>boxItem({...i,src:feed.name})).join('')
     : (feed.status==='loading'||feed.status==='pending' ? `<div class="col-msg">⟳ loading…</div>`
@@ -287,14 +296,16 @@ function boxHTML(feed, q){
   </div>`;
 }
 
+// Wie viele Spalten passen nebeneinander (Mindestbreite 230 px)?
 function colCount(){
   const grid = document.getElementById('columns');
-  const w = (grid ? grid.clientWidth : window.innerWidth) - 20;
+  const w = (grid ? grid.clientWidth : window.innerWidth) - 20; // minus Innenabstand
   const min = 230, gap = 10;
   return Math.max(1, Math.floor((w + gap) / (min + gap)));
 }
 function render() {
   const q = document.getElementById('search-box') ? document.getElementById('search-box').value.toLowerCase().trim() : '';
+  // Reihenfolge: TOP zuerst, dann die Quellen; verteilt reihum auf die Spalten-Stapel
   const parts = [ topColumnHTML(q) ];
   data.forEach(f=>{ const h = boxHTML(f,q); if(h) parts.push(h); });
   const N = colCount();
@@ -314,15 +325,17 @@ function render() {
   fitBoxes();
 }
 
-const customH = {};
-let autoH = 0;
+// Auto-Höhe: alle Kacheln passen ohne Scrollen auf einen Bildschirm.
+// Vom Nutzer gezogene Kacheln (customH) behalten ihre Höhe – bis zum nächsten Refresh.
+const customH = {};   // src -> px (per Griff gezogen)
+let autoH = 0;        // zuletzt automatisch berechnete Höhe
 function fitBoxes(){
   const grid = document.getElementById('columns');
   if(!grid) return;
   const allCols = grid.querySelectorAll('.col');
   if(!allCols.length) return;
-  const N = grid.children.length || 1;
-  const rows = Math.ceil(allCols.length / N);
+  const N = grid.children.length || 1;           // Anzahl Spalten (.colset)
+  const rows = Math.ceil(allCols.length / N);     // höchste Spalte
   const gap = 10;
   const cs = getComputedStyle(grid);
   const avail = grid.clientHeight - parseFloat(cs.paddingTop||0) - parseFloat(cs.paddingBottom||0);
@@ -333,9 +346,10 @@ function fitBoxes(){
     col.style.height = ((key && customH[key]) || autoH) + 'px';
   });
 }
-window.addEventListener('resize', render);
+window.addEventListener('resize', render);   // bei Breitenänderung Spaltenzahl neu berechnen
 
 // Ziehgriff ▾ (unten mittig): nur diese Kachel in der Höhe ziehen.
+// ~zurück auf Normalhöhe → gemerkte Höhe wird gelöscht (= wieder Automatik).
 let dragCol = null, dragStartY = 0, dragStartH = 0;
 document.getElementById('columns').addEventListener('pointerdown', e=>{
   const grip = e.target.closest('.col-grip'); if(!grip) return;
@@ -355,11 +369,12 @@ window.addEventListener('pointerup', ()=>{
   const key = dragCol.getAttribute('data-src');
   const h = Math.round(dragCol.getBoundingClientRect().height);
   if(key){
-    if(Math.abs(h - autoH) <= 6) delete customH[key];
+    if(Math.abs(h - autoH) <= 6) delete customH[key];   // nahe Auto-Höhe → Automatik
     else customH[key] = h;
   }
   dragCol = null;
 });
+// Doppelklick auf den Kachel-Kopf: Kachel wieder auf Automatik
 document.getElementById('columns').addEventListener('dblclick', e=>{
   const head = e.target.closest('.col-head'); if(!head) return;
   const col = head.closest('.col'); if(!col) return;
@@ -372,22 +387,25 @@ async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
     let items = await fetchFeed(feed.url);
+    // Ersatz-Adressen probieren, falls die Haupt-URL nichts liefert
     if ((!items || !items.length) && feed.alt) {
       for (const u of feed.alt) {
         items = await fetchFeed(u);
         if (items && items.length) break;
       }
     }
+    // Zusatz-Feeds derselben Quelle dazumischen (mehr Volumen)
     if (feed.merge && feed.merge.length) {
       for (const u of feed.merge) {
         try { const ex = await fetchFeed(u); if (ex && ex.length) items = (items||[]).concat(ex); } catch(e) {}
       }
     }
     if (!items || items.length === 0) throw new Error('no items');
+    // Dubletten anhand des Titels entfernen
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
     items.sort((a, b) => b.date - a.date);
-    feed.items  = items.slice(0,20);
+    feed.items  = items.slice(0,20);   // nur die neuesten 20 Meldungen je Kachel
     feed.status = 'ok';
   } catch(e) {
     feed.status = 'fail';
@@ -403,12 +421,14 @@ async function loadFeed(feed) {
   render();
 }
 
+// Drossel: immer nur wenige Feeds gleichzeitig, sonst drosseln die Gratis-Proxys alles weg
 async function runPool(items, limit, worker){
   let i = 0;
   const run = async () => { while(i < items.length){ const idx = i++; await worker(items[idx]); } };
   await Promise.all(Array.from({length: Math.min(limit, items.length)}, run));
 }
 
+// Hintergrund-Quelle laden: nur Items sammeln (für TOP), kein eigenes Kästchen
 async function loadExtra(feed){
   try{
     let items = await fetchFeed(feed.url);
@@ -420,6 +440,7 @@ async function loadExtra(feed){
 }
 
 async function refreshAll() {
+  Object.keys(customH).forEach(k=>delete customH[k]);   // Refresh setzt gezogene Höhen auf Automatik zurück
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
   extra.forEach(f=>{f.items=[];f.status='pending';});
@@ -428,6 +449,7 @@ async function refreshAll() {
   await Promise.all([ runPool(data, 6, loadFeed), runPool(extra, 6, loadExtra) ]);
 }
 
+// Markieren ohne Öffnen: ist Text ausgewählt, zählt das Loslassen nicht als Link-Klick
 document.getElementById('columns').addEventListener('click', e=>{
   const a = e.target.closest('a.item');
   if(!a) return;
@@ -435,6 +457,7 @@ document.getElementById('columns').addEventListener('click', e=>{
   if(sel && !sel.isCollapsed && sel.toString().trim().length>0) e.preventDefault();
 });
 
+// Tastatur-Navigation: Pfeiltasten bewegen den Auswahl-Balken (←/→ Kachel, ↑/↓ Meldung), Enter öffnet
 let selCol = 0, selRow = 0, navActive = false;
 function navCols(){ return [...document.querySelectorAll('#columns .col')]; }
 function navItems(ci){ const c = navCols()[ci]; return c ? [...c.querySelectorAll('a.item')] : []; }
@@ -512,6 +535,7 @@ function timeAgo(d) {
   if(m<1440) return `${Math.floor(m/60)} hr`;
   return `${Math.floor(m/1440)}d`;
 }
+// Relevanz-Flag: Dringlichkeits-/Exklusiv-Wörter (EN + FR) → ganze Schlagzeile rot
 const URGENT = /(\bbreaking\b|\bjust in\b|\burgent\b|\bexclusive\b|\bexclusif\b|\balert\b|\balerte\b|\bderni[eè]re minute\b|\bflash\b)/i;
 function isUrgent(t){ return URGENT.test(t||''); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
