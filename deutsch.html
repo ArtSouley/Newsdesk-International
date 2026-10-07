@@ -46,11 +46,9 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .columns-wrap{flex:1;display:flex;gap:10px;padding:10px;overflow-y:auto;align-items:flex-start;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;}
 .columns-wrap::-webkit-scrollbar{width:6px;}
 .columns-wrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
-/* Spalten-Stapel: jede Spalte ist unabhängig – zieht man eine Kachel größer, rutschen nur die Kacheln DARUNTER in derselben Spalte. */
 .colset{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:10px;}
 .col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:120px;height:var(--boxh);flex:none;}
 .col-head{cursor:default;}
-/* Ziehgriff: ▾ mittig unten – Höhe der Kachel ziehen */
 .col-grip{flex-shrink:0;height:16px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;color:var(--faint);font-size:1rem;line-height:1;background:var(--panel);border-top:1px solid var(--line);user-select:none;-webkit-user-select:none;touch-action:none;}
 .col-grip:hover{color:var(--accent);background:var(--panel2);}
 .top-box .col-name{color:var(--urgent);}
@@ -169,7 +167,7 @@ function parseXML(xml) {
       const raw = pub ? new Date(pub) : null;
       let date, est=false;
       if(raw && !isNaN(raw.getTime())){ date = raw; }
-      else { date = new Date(Date.now() - idx*60000); est = true; } // kein/ungültiges Datum (z. B. BILD) → nach Feed-Reihenfolge oben, ohne Zeitangabe
+      else { date = new Date(Date.now() - idx*60000); est = true; }
       return {title, link, pub, date, est};
     });
     return items.filter(i=>i.title.length>3);
@@ -330,7 +328,6 @@ function fitBoxes(){
 }
 window.addEventListener('resize', render);
 
-// Ziehgriff ▾ (unten mittig): nur diese Kachel in der Höhe ziehen.
 let dragCol = null, dragStartY = 0, dragStartH = 0;
 document.getElementById('columns').addEventListener('pointerdown', e=>{
   const grip = e.target.closest('.col-grip'); if(!grip) return;
@@ -415,6 +412,7 @@ async function loadExtra(feed){
 }
 
 async function refreshAll() {
+  Object.keys(customH).forEach(k=>delete customH[k]);   // Refresh setzt gezogene Höhen auf Automatik zurück
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
   extra.forEach(f=>{f.items=[];f.status='pending';});
