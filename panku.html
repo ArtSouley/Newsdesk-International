@@ -118,8 +118,11 @@ const FEEDS = [
                               merge:['https://www.rtl.de/rss/feed/unterhaltung/royals']},
   {name:'SPIEGEL',            url:'https://www.spiegel.de/schlagzeilen/rss/0,5291,22,00.xml'},
   {name:'NTV',                url:'https://www.n-tv.de/leute/rss'},
+  {name:'Viply',              url:'http://www.viply.de/?feed=rss2'},
+  {name:'news.de',            url:'http://www.news.de/rss/849808447/promis/'},
   // --- International ---
   {name:'TMZ',                url:'https://www.tmz.com/rss.xml'},
+  {name:'Deadline',           url:'https://deadline.com/feed/'},
   {name:'People',             url:'https://news.google.com/rss/search?q=site:people.com&hl=en-US&gl=US&ceid=US:en'},
   {name:'Hollywood Reporter', url:'https://www.hollywoodreporter.com/feed/'},
   {name:'Variety',            url:'https://variety.com/feed/'},
@@ -133,17 +136,19 @@ const FEEDS = [
   {name:'Guardian',           url:'https://www.theguardian.com/culture/rss'},
 ];
 
+// Feste Balken-/Quellenfarbe je Quelle
 const SRC = {
   'TMZ':'#f472b6','People':'#38bdf8','Hollywood Reporter':'#fbbf24','Variety':'#a78bfa',
   'ABC':'#5b9dff','E! News':'#e879f9','Sky Ent':'#22c3e6','UPI':'#a3e635','EW':'#fb923c',
   'Fox News':'#2563eb','Hello!':'#fb7185','Page Six':'#c084fc','BBC':'#34d399','Guardian':'#2dd4bf',
   'Rolling Stone':'#f97316','BILD':'#facc15','Promiflash':'#d946ef','Gala':'#818cf8','Stern':'#fca5a5',
   'Rolling Stone DE':'#e0a63c','DLF Kultur':'#86efac','T-ONLINE':'#14b8a6','SPIEGEL':'#93c5fd','NTV':'#65a30d',
-  'RTL STARS':'#ffcc00'
+  'RTL STARS':'#ffcc00','Viply':'#f43f5e','news.de':'#06b6d4','Deadline':'#ef4444'
 };
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
+// Hintergrund-Quellen: zählen für TOP mit, erscheinen aber NICHT als eigene Kachel
 const EXTRA_FEEDS = [
   {name:'Google News',     url:'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=de&gl=DE&ceid=DE:de'},
   {name:'Sky Ent',         url:'https://feeds.skynews.com/feeds/rss/entertainment.xml'},
