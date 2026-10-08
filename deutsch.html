@@ -127,12 +127,18 @@ const FEEDS = [
                       alt:['https://rss.sueddeutsche.de/app/service/rss/alles/index.rss?output=rss',
                            'https://www.sueddeutsche.de/news/rss']},
   {name:'ZEIT',       url:'https://newsfeed.zeit.de/all'},
+  {name:'WDR',        url:'https://www1.wdr.de/nachrichten/index.feed',
+                      alt:['https://www1.wdr.de/uebersicht-100.feed']},
+  {name:'NDR',        url:'https://www.ndr.de/nachrichten/index-rss.xml',
+                      alt:['https://www.ndr.de/home/index-rss.xml']},
 ];
 
+// Feste Balken-/Quellenfarbe je Quelle
 const SRC = {
   'SPIEGEL':'#5b9dff','BILD':'#fb923c','T-ONLINE':'#34d399','DTS':'#e0a63c',
   'NTV':'#f472b6','DLF':'#a78bfa','EURONEWS':'#22c3e6','WELT':'#a3e635','Tagesspiegel':'#2dd4bf',
-  'RND':'#818cf8','Tagesschau':'#2563eb','SZ':'#facc15','ZEIT':'#f87171','BI DE':'#fca5a5'
+  'RND':'#818cf8','Tagesschau':'#2563eb','SZ':'#facc15','ZEIT':'#f87171','BI DE':'#fca5a5',
+  'WDR':'#c084fc','NDR':'#4ade80'
 };
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
