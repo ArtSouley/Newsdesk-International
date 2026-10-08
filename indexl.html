@@ -127,7 +127,9 @@ const FEEDS = [
   {name:'FRANCE 24',  url:'https://www.france24.com/en/rss'},
   {name:'RFI',        url:'https://www.rfi.fr/en/rss'},
   {name:'NY Post',    url:'https://nypost.com/feed/'},
-  {name:'CNN',        url:'http://rss.cnn.com/rss/edition.rss'},
+  {name:'Telegraph',  url:'https://www.telegraph.co.uk/news/rss.xml',
+                      alt:['https://www.telegraph.co.uk/rss.xml',
+                           'https://www.telegraph.co.uk/world-news/rss.xml']},
   {name:'Axios',      url:'https://api.axios.com/feed/'},
 ];
 
@@ -136,7 +138,7 @@ const SRC = {
   'BAHA':'#e879f9','AA':'#a3e635','BBC':'#5b9dff','GUARDIAN':'#22c3e6',
   'SKY NEWS':'#f472b6','NPR':'#fb923c','ABC':'#818cf8','NBC':'#facc15',
   'AL JAZEERA':'#e0a63c','Al Arabiya':'#4ade80','FRANCE 24':'#a78bfa','RFI':'#fbbf24',
-  'NY Post':'#c084fc','DW':'#34d399','BI US':'#2dd4bf','Axios':'#38bdf8','CNN':'#ef4444'
+  'NY Post':'#c084fc','DW':'#34d399','BI US':'#2dd4bf','Axios':'#38bdf8','Telegraph':'#f9a8d4'
 };
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
