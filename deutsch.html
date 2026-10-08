@@ -127,9 +127,9 @@ const FEEDS = [
                       alt:['https://rss.sueddeutsche.de/app/service/rss/alles/index.rss?output=rss',
                            'https://www.sueddeutsche.de/news/rss']},
   {name:'ZEIT',       url:'https://newsfeed.zeit.de/all'},
-  {name:'WDR',        url:'https://www1.wdr.de/nachrichten/index.feed',
+  {name:'WDR',        url:'https://www1.wdr.de/nachrichten/index.feed', fast:true,
                       alt:['https://www1.wdr.de/uebersicht-100.feed']},
-  {name:'NDR',        url:'https://www.ndr.de/nachrichten/index-rss.xml',
+  {name:'NDR',        url:'https://www.ndr.de/nachrichten/index-rss.xml', fast:true,
                       alt:['https://www.ndr.de/home/index-rss.xml']},
 ];
 
@@ -180,14 +180,16 @@ function parseXML(xml) {
   } catch(e) { return []; }
 }
 
-async function fetchFeed(url) {
+async function fetchFeed(url, fast) {
+  // fast=true (z. B. WDR/NDR): kürzere Timeouts, damit ein hängender Proxy nicht lange blockiert
+  const T1 = fast ? 8000 : 15000, T2 = fast ? 7000 : 12000, T3 = fast ? 6000 : 10000;
   const strategies = [
-    async () => { const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
-    async () => { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
-    async () => { const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); return r.ok ? await r.text() : null; },
-    async () => { const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(15000)}); if(!r.ok) return null; const j = await r.json(); return j && j.contents ? j.contents : null; },
-    async () => { const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(12000)}); return r.ok ? await r.text() : null; },
-    async () => { const r = await fetch(url, {signal:AbortSignal.timeout(10000)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(T1)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(T1)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(T1)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(T1)}); if(!r.ok) return null; const j = await r.json(); return j && j.contents ? j.contents : null; },
+    async () => { const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(T2)}); return r.ok ? await r.text() : null; },
+    async () => { const r = await fetch(url, {signal:AbortSignal.timeout(T3)}); return r.ok ? await r.text() : null; },
   ];
   for (const strat of strategies) {
     try { const text = await strat(); if (text) { const items = parseXML(text); if (items.length > 0) return items; } } catch(e) {}
@@ -369,11 +371,19 @@ document.getElementById('columns').addEventListener('dblclick', e=>{
 async function loadFeed(feed) {
   feed.status = 'loading'; render();
   try {
-    let items = await fetchFeed(feed.url);
-    if ((!items || !items.length) && feed.alt) {
-      for (const u of feed.alt) {
-        items = await fetchFeed(u);
-        if (items && items.length) break;
+    let items;
+    if (feed.fast) {
+      // Schnelle Quellen (WDR/NDR): Haupt- UND Ersatz-Adresse GLEICHZEITIG laden – die erste mit Treffern gewinnt
+      const urls = [feed.url, ...(feed.alt||[])];
+      const results = await Promise.all(urls.map(u=>fetchFeed(u, true).catch(()=>null)));
+      items = results.find(r=>r && r.length) || [];
+    } else {
+      items = await fetchFeed(feed.url);
+      if ((!items || !items.length) && feed.alt) {
+        for (const u of feed.alt) {
+          items = await fetchFeed(u);
+          if (items && items.length) break;
+        }
       }
     }
     if (feed.merge && feed.merge.length) {
