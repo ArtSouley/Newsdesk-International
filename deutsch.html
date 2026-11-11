@@ -107,9 +107,13 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 <div class="columns-wrap" id="columns"></div>
 
 <script>
+// Advertorial-/Werbe-Filter: Titel mit diesen Mustern werden bei Feeds mit filterAds:true übersprungen.
+// Zum Pflegen einfach Stichwörter ergänzen/entfernen (getrennt durch |).
+const AD_RX = /lotto|6aus49|bild-?ki|handyrechnung|black\s?friday|singles\s?day|prime\s?day|cyber\s?monday|schn[äa]ppchen|angebot|gutschein|rabatt|deal\b|% ?sparen|sparen sie/i;
+
 const FEEDS = [
   {name:'SPIEGEL',    url:'https://www.spiegel.de/schlagzeilen/index.rss'},
-  {name:'BILD',       url:'https://www.bild.de/rss-feeds/rss-16725492,feed=home.bild.html'},
+  {name:'BILD',       url:'https://www.bild.de/rss-feeds/rss-16725492,feed=home.bild.html', filterAds:true},
   {name:'T-ONLINE',   url:'https://www.t-online.de/feed.rss',
                       merge:['https://www.t-online.de/schlagzeilen/feed.rss',
                              'https://www.t-online.de/nachrichten/feed.rss']},
@@ -143,6 +147,7 @@ const SRC = {
 
 const data = FEEDS.map(f=>({...f, items:[], status:'pending'}));
 
+// Hintergrund-Quellen: fließen NUR in die TOP-Spalte (kein eigenes Kästchen)
 const EXTRA_FEEDS = [
   {name:'Google News', url:'https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de'},
   {name:'BI DE',       url:'https://www.businessinsider.de/feed/businessinsider-alle-artikel'},
@@ -373,7 +378,6 @@ async function loadFeed(feed) {
   try {
     let items;
     if (feed.fast) {
-      // Schnelle Quellen (WDR/NDR): Haupt- UND Ersatz-Adresse GLEICHZEITIG laden – die erste mit Treffern gewinnt
       const urls = [feed.url, ...(feed.alt||[])];
       const results = await Promise.all(urls.map(u=>fetchFeed(u, true).catch(()=>null)));
       items = results.find(r=>r && r.length) || [];
@@ -394,6 +398,8 @@ async function loadFeed(feed) {
     if (!items || items.length === 0) throw new Error('no items');
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
+    // Advertorials/Service-Strecken rausfiltern (nur bei Feeds mit filterAds, z. B. BILD)
+    if (feed.filterAds) items = items.filter(i=>!AD_RX.test(i.title));
     items.sort((a, b) => b.date - a.date);
     feed.items  = items.slice(0,20);
     feed.status = 'ok';
