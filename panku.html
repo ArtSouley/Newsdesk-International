@@ -123,7 +123,10 @@ const FEEDS = [
   // --- International ---
   {name:'TMZ',                url:'https://www.tmz.com/rss.xml'},
   {name:'Deadline',           url:'https://deadline.com/feed/'},
-  {name:'People',             url:'https://news.google.com/rss/search?q=site:people.com&hl=en-US&gl=US&ceid=US:en'},
+  {name:'People',             url:'http://rss.people.com/web/people/rss/topheadlines/index.xml',
+                              alt:['https://people.com/feed/',
+                                   'https://news.google.com/rss/search?q=site:people.com%20when:2d&hl=en-US&gl=US&ceid=US:en',
+                                   'https://news.google.com/rss/search?q=site:people.com&hl=en-US&gl=US&ceid=US:en']},
   {name:'Hollywood Reporter', url:'https://www.hollywoodreporter.com/feed/'},
   {name:'Variety',            url:'https://variety.com/feed/'},
   {name:'ABC',                url:'https://feeds.abcnews.com/abcnews/entertainmentheadlines'},
@@ -421,7 +424,7 @@ async function loadExtra(feed){
 }
 
 async function refreshAll() {
-  Object.keys(customH).forEach(k=>delete customH[k]);   // Refresh setzt gezogene Höhen auf Automatik zurück
+  Object.keys(customH).forEach(k=>delete customH[k]);
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
   extra.forEach(f=>{f.items=[];f.status='pending';});
