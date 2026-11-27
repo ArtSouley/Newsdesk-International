@@ -440,6 +440,14 @@ document.getElementById('columns').addEventListener('click', e=>{
 });
 
 let selCol = 0, selRow = 0, navActive = false;
+// Maus-Hover markiert die Meldung – danach steuert die Tastatur (↑/↓/←/→) von hier aus weiter
+document.getElementById('columns').addEventListener('mouseover', e=>{
+  const a = e.target.closest('a.item'); if(!a) return;
+  const col = a.closest('.col'); if(!col) return;
+  const cs = navCols(); const ci = cs.indexOf(col); if(ci<0) return;
+  const ri = navItems(ci).indexOf(a); if(ri<0) return;
+  navActive = true; selCol = ci; selRow = ri; navApply(false);
+});
 function navCols(){ return [...document.querySelectorAll('#columns .col')]; }
 function navItems(ci){ const c = navCols()[ci]; return c ? [...c.querySelectorAll('a.item')] : []; }
 function navApply(scroll){
