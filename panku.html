@@ -68,12 +68,12 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .item-src{font-weight:600;color:var(--srcc,var(--muted));}
 .item-time{color:var(--faint);}
 .item-title{font-size:0.71rem;line-height:1.28;color:var(--ink);font-weight:500;}
-.item:hover .item-title{color:var(--accent);}
+.item:hover .item-title{color:#ffd24a;}
 .item.urgent::before{background:var(--urgent);}
 .item.urgent .item-title{color:var(--urgent);font-weight:700;}
 .item.urgent .item-src{color:var(--urgent);}
 .item:hover.urgent .item-title{color:var(--urgent);}
-.item.sel{background:var(--panel2);box-shadow:inset 0 0 0 2px var(--accent);border-radius:4px;}
+.item.sel{background:var(--panel2);box-shadow:inset 0 0 0 2px #ffd24a;border-radius:4px;}
 
 .badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
 
@@ -501,7 +501,6 @@ window.addEventListener('keydown', e=>{
   }
   navMove(dirs[e.key][0], dirs[e.key][1]);
 });
-
 function navRefocus(){
   const cols=document.getElementById('columns');
   const sb=document.getElementById('search-box');
