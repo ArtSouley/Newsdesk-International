@@ -1,3 +1,8 @@
+Hier **deutsch.html** – gleich vorgehen: Edit → Strg+A → löschen → einfügen → Commit.
+
+**2) deutsch.html**
+
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -68,12 +73,12 @@ header{display:flex;align-items:center;gap:12px;padding:0 14px;height:42px;flex-
 .item-src{font-weight:600;color:var(--srcc,var(--muted));}
 .item-time{color:var(--faint);}
 .item-title{font-size:0.71rem;line-height:1.28;color:var(--ink);font-weight:500;}
-.item:hover .item-title{color:var(--accent);}
+.item:hover .item-title{color:#ffd24a;}
 .item.urgent::before{background:var(--urgent);}
 .item.urgent .item-title{color:var(--urgent);font-weight:700;}
 .item.urgent .item-src{color:var(--urgent);}
 .item:hover.urgent .item-title{color:var(--urgent);}
-.item.sel{background:var(--panel2);box-shadow:inset 0 0 0 2px var(--accent);border-radius:4px;}
+.item.sel{background:var(--panel2);box-shadow:inset 0 0 0 2px #ffd24a;border-radius:4px;}
 
 .badge{display:inline-block;background:var(--urgent);color:#fff;font-weight:600;padding:1px 6px;border-radius:9px;font-size:0.56rem;font-family:var(--mono);}
 
@@ -186,7 +191,6 @@ function parseXML(xml) {
 }
 
 async function fetchFeed(url, fast) {
-  // fast=true (z. B. WDR/NDR): kürzere Timeouts, damit ein hängender Proxy nicht lange blockiert
   const T1 = fast ? 8000 : 15000, T2 = fast ? 7000 : 12000, T3 = fast ? 6000 : 10000;
   const strategies = [
     async () => { const r = await fetch(`https://speedboatnat.sartiisik.workers.dev/?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(T1)}); return r.ok ? await r.text() : null; },
@@ -398,7 +402,6 @@ async function loadFeed(feed) {
     if (!items || items.length === 0) throw new Error('no items');
     const seen = new Set();
     items = items.filter(i=>{ const k=i.title.toLowerCase().slice(0,60); if(seen.has(k)) return false; seen.add(k); return true; });
-    // Advertorials/Service-Strecken rausfiltern (nur bei Feeds mit filterAds, z. B. BILD)
     if (feed.filterAds) items = items.filter(i=>!AD_RX.test(i.title));
     items.sort((a, b) => b.date - a.date);
     feed.items  = items.slice(0,20);
@@ -434,7 +437,7 @@ async function loadExtra(feed){
 }
 
 async function refreshAll() {
-  Object.keys(customH).forEach(k=>delete customH[k]);   // Refresh setzt gezogene Höhen auf Automatik zurück
+  Object.keys(customH).forEach(k=>delete customH[k]);
   loadedCount = 0;
   data.forEach(f=>{f.items=[];f.status='pending';});
   extra.forEach(f=>{f.items=[];f.status='pending';});
@@ -541,3 +544,6 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 </script>
 </body>
 </html>
+```
+
+Sag „weiter", dann kommt **panku.html** als Letztes.
